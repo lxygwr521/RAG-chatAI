@@ -1,0 +1,483 @@
+// ============================================
+// SCSS 变量和 Mixins（全局共享）
+// 通过 Vite additionalData 自动注入到所有 SCSS 文件
+// ============================================
+
+@use "sass:color";
+
+// --------------------------------------------
+// 1. 主题颜色（与 Tailwind @theme 保持一致）
+// --------------------------------------------
+
+// Primary 色系（紫色）
+$color-primary-50: #f5f3ff;
+$color-primary-100: #ede9fe;
+$color-primary-200: #ddd6fe;
+$color-primary-300: #c4b5fd;
+$color-primary-400: #a78bfa;
+$color-primary-500: #8b5cf6;
+$color-primary-600: #7c3aed;
+$color-primary-700: #6d28d9;
+$color-primary-800: #5b21b6;
+$color-primary-900: #4c1d95;
+
+// Neutral 色系（灰度）
+$color-gray-50: #f9fafb;
+$color-gray-100: #f3f4f6;
+$color-gray-200: #e5e7eb;
+$color-gray-300: #d1d5db;
+$color-gray-400: #9ca3af;
+$color-gray-500: #6b7280;
+$color-gray-600: #4b5563;
+$color-gray-700: #374151;
+$color-gray-800: #1f2937;
+$color-gray-900: #111827;
+
+// 语义化颜色
+$color-success: #22c55e;
+$color-success-light: #86efac;
+$color-warning: #f59e0b;
+$color-warning-light: #fcd34d;
+$color-error: #ef4444;
+$color-error-light: #fca5a5;
+$color-error-hover: #dc2626; // 10% darker than $color-error
+$color-info: #3b82f6;
+
+// 背景色
+$color-bg-primary: #ffffff;
+$color-bg-secondary: #f9fafb;
+$color-bg-tertiary: #f3f4f6;
+
+// 文本色
+$color-text-primary: #111827;
+$color-text-secondary: #374151;
+$color-text-tertiary: #6b7280;
+$color-text-muted: #9ca3af;
+
+// 边框色
+$color-border-light: #e5e7eb;
+$color-border-default: #d1d5db;
+$color-border-dark: #9ca3af;
+
+// --------------------------------------------
+// 2. 字体系统
+// --------------------------------------------
+
+$font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-family-mono: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+
+$font-size-xs: 0.75rem;    // 12px
+$font-size-sm: 0.875rem;   // 14px
+$font-size-base: 1rem;     // 16px
+$font-size-lg: 1.125rem;   // 18px
+$font-size-xl: 1.25rem;    // 20px
+$font-size-2xl: 1.5rem;    // 24px
+$font-size-3xl: 1.875rem;  // 30px
+
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+$line-height-tight: 1.25;
+$line-height-normal: 1.5;
+$font-height-relaxed: 1.625;
+
+// --------------------------------------------
+// 3. 间距系统（与 Tailwind spacing 保持一致）
+// --------------------------------------------
+
+$spacing-unit: 0.25rem; // 4px
+
+$spacing-0: 0;
+$spacing-1: $spacing-unit;         // 4px
+$spacing-2: $spacing-unit * 2;     // 8px
+$spacing-3: $spacing-unit * 3;     // 12px
+$spacing-4: $spacing-unit * 4;     // 16px
+$spacing-5: $spacing-unit * 5;     // 20px
+$spacing-6: $spacing-unit * 6;     // 24px
+$spacing-8: $spacing-unit * 8;     // 32px
+$spacing-10: $spacing-unit * 10;   // 40px
+$spacing-12: $spacing-unit * 12;   // 48px
+$spacing-16: $spacing-unit * 16;   // 64px
+
+// --------------------------------------------
+// 4. 圆角系统
+// --------------------------------------------
+
+$radius-none: 0;
+$radius-sm: 0.25rem;    // 4px
+$radius-md: 0.375rem;   // 6px
+$radius-lg: 0.5rem;     // 8px
+$radius-xl: 0.75rem;    // 12px
+$radius-2xl: 1rem;      // 16px
+$radius-full: 9999px;
+
+// --------------------------------------------
+// 5. 阴影系统
+// --------------------------------------------
+
+$shadow-xs: 0 1px 1px 0 rgb(0 0 0 / 0.05);
+$shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+$shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+$shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+$shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+$shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+// --------------------------------------------
+// 6. 过渡动画
+// --------------------------------------------
+
+$transition-fast: 150ms ease-in-out;
+$transition-normal: 250ms ease-in-out;
+$transition-slow: 350ms ease-in-out;
+
+$duration-fast: 150ms;
+$duration-normal: 250ms;
+$duration-slow: 350ms;
+
+$ease-in-out: ease-in-out;
+$ease-out: ease-out;
+$ease-in: ease-in;
+
+// --------------------------------------------
+// 7. 响应式断点（与 Tailwind 一致）
+// --------------------------------------------
+
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+
+// --------------------------------------------
+// 8. Z-Index 层级
+// --------------------------------------------
+
+$z-dropdown: 1000;
+$z-sticky: 1020;
+$z-fixed: 1030;
+$z-modal-backdrop: 1040;
+$z-modal: 1050;
+$z-popover: 1060;
+$z-tooltip: 1070;
+
+// --------------------------------------------
+// 9. Mixins（复用样式逻辑）
+// --------------------------------------------
+
+// Flex 居中
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Flex 垂直居中
+@mixin flex-center-vertical {
+  display: flex;
+  align-items: center;
+}
+
+// 绝对居中
+@mixin absolute-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+// 卡片基础样式
+@mixin card {
+  background: $color-bg-primary;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  padding: $spacing-4;
+  border: 1px solid $color-border-light;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+}
+
+// 卡片标题
+@mixin card-title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-3;
+}
+
+// 按钮基础样式
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-2 $spacing-4;
+  border-radius: $radius-md;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: all $transition-fast;
+  border: none;
+  outline: none;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-primary-500;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+// 按钮变体 - Primary
+@mixin button-primary {
+  @include button-base;
+  background-color: $color-primary-500;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: $color-primary-600;
+  }
+}
+
+// 按钮变体 - Secondary
+@mixin button-secondary {
+  @include button-base;
+  background-color: $color-gray-100;
+  color: $color-text-primary;
+
+  &:hover:not(:disabled) {
+    background-color: $color-gray-200;
+  }
+}
+
+// 按钮变体 - Danger
+@mixin button-danger {
+  @include button-base;
+  background-color: $color-error;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background-color: color.adjust($color-error, $lightness: -10%);
+  }
+}
+
+// 输入框基础样式
+@mixin input-base {
+  width: 100%;
+  padding: $spacing-2 $spacing-3;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  background-color: $color-bg-primary;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:focus {
+    outline: none;
+    border-color: $color-primary-500;
+    box-shadow: 0 0 0 3px rgba($color-primary-500, 0.1);
+  }
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+}
+
+// 文本截断
+@mixin text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 多行文本截断
+@mixin text-clamp($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// 清除浮动
+@mixin clearfix {
+  &::after {
+    content: '';
+    display: table;
+    clear: both;
+  }
+}
+
+// 视觉隐藏（无障碍用）
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// --------------------------------------------
+// 10. 动画关键帧
+// --------------------------------------------
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// 动画工具类
+.animate-fade-in {
+  animation: fade-in $duration-normal $ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up $duration-normal $ease-out;
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down $duration-normal $ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left $duration-normal $ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right $duration-normal $ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+// --------------------------------------------
+// 11. 暗色模式变量
+// --------------------------------------------
+
+$color-bg-dark: #0f172a;
+$color-bg-dark-secondary: #1e293b;
+$color-bg-dark-tertiary: #334155;
+
+$color-text-dark-primary: #f1f5f9;
+$color-text-dark-secondary: #cbd5e1;
+$color-text-dark-tertiary: #94a3b8;
+
+$color-border-dark: #334155;
+$color-border-dark-light: #475569;
+
+// --------------------------------------------
+// 12. 通用工具类
+// --------------------------------------------
+
+.sr-only {
+  @include visually-hidden;
+}
+
+//icon图标类
+%mask-icon {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  background: #333;
+  display: inline-block;
+}
+@mixin mask-icon($icon-url){
+  @extend %mask-icon;
+  mask: url($icon-url) center/contain no-repeat;
+}
+.icon-model{
+  @include mask-icon('@/assets/icon/model.svg')
+}
+.icon-cloud{
+  @include mask-icon('@/assets/icon/cloud.svg');
+  width: 18px;
+  height: 18px;
+}
