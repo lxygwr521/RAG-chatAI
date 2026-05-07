@@ -9,6 +9,7 @@ import splitAtDelimiters from 'katex/contrib/auto-render/splitAtDelimiters'
 import 'katex/dist/katex.min.css'
 import 'katex/dist/contrib/mhchem.min.js'
 
+import 'highlight.js/styles/github.css' //github主题
 //mermaid相关
 import {
   markdownItMermaidPlugin,
@@ -31,7 +32,6 @@ const md = new MarkdownIt({
   linkify: true,
   typographer: true
 })
-console.log(markdownItKatex)
 md.use(markdownItHighlight, {
   hljs
 })

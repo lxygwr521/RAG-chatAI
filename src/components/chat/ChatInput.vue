@@ -1,83 +1,127 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-
+import { ref, nextTick, computed } from 'vue'
+import FileUpload from './FileUpload.vue'
+import FileItem from './FileItem.vue'
+import { UploadFile } from './types';
 const props = defineProps<{
   isGenerating?: boolean
 }>()
 
 const emit = defineEmits<{
-  submit: [value: string]
+  submit: [value: string, files: UploadFile[]]
   stop: []
 }>()
 
 const inputValue = ref('')
+const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
-function handleSubmit() {
+const uploadedFiles = computed(() => fileUploadRef.value?.files ?? [])
+
+function autoResize() {
+  nextTick(() => {
+    const el = textareaRef.value
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  })
+}
+
+async function handleSubmit() {
   const value = inputValue.value.trim()
-  if (!value) return
-  emit('submit', value)
+  if (!value && uploadedFiles.value.length === 0) return
+  emit('submit', value, uploadedFiles.value)
   inputValue.value = ''
+  fileUploadRef.value?.clearFiles()
+  textareaRef.value.style.height = 'auto'
 }
 
 function handleStop() {
   emit('stop')
 }
+
+function handleRemoveFile(id: string) {
+  fileUploadRef.value?.removeFile(id)
+}
 </script>
 
 <template>
-  <div class="chat-input">
     <div class="input-wrapper">
-      <textarea
-        v-model="inputValue"
-        class="input-field"
-        :placeholder="isGenerating ? '正在生成回答...' : '输入你的问题...'"
-        :disabled="isGenerating"
-        rows="1"
-        @keydown.enter.exact.prevent="handleSubmit"
-      />
-      <button
-        v-if="!isGenerating"
-        type="button"
-        class="submit-btn"
-        :disabled="!inputValue.trim()"
-        @click="handleSubmit"
-      >
-        发送
-      </button>
-      <button
-        v-else
-        type="button"
-        class="stop-btn"
-        @click="handleStop"
-      >
-        停止
-      </button>
+      <!-- File list -->
+      <Transition name="slide">
+        <div v-if="uploadedFiles.length > 0" class="input-wrapper__files">
+          <FileItem
+            v-for="item in uploadedFiles"
+            :key="item.id"
+            :item="item"
+            @remove="handleRemoveFile"
+          />
+        </div>
+      </Transition>
+        <textarea
+          ref="textareaRef"
+          v-model="inputValue"
+          class="input-field"
+          :placeholder="isGenerating ? '正在生成回答...' : '输入你的问题...'"
+          :disabled="isGenerating"
+          @input="autoResize"
+          @keydown.enter.exact.prevent="handleSubmit"
+        />
+  
+        <div class="input-wrapper__actions">
+          <FileUpload
+            v-if="!isGenerating"
+            ref="fileUploadRef"
+            class="chat-input__upload"
+          />
+          <button
+            v-if="!isGenerating"
+            type="button"
+            class="submit-btn"
+            :disabled="!inputValue.trim() && uploadedFiles.length === 0"
+            @click="handleSubmit"
+          >
+            发送
+          </button>
+          <button
+            v-else
+            type="button"
+            class="stop-btn"
+            @click="handleStop"
+          >
+            停止
+          </button>
+        </div>
     </div>
-  </div>
 </template>
 
 <style scoped lang="scss">
-
-.chat-input {
-  padding: $spacing-3 $spacing-5;
-  border-top: 1px solid $color-gray-200;
-  background: $color-bg-primary;
-}
-
 .input-wrapper {
   display: flex;
-  align-items: flex-end;
-  gap: $spacing-3;
+  flex-direction: column;
+  gap: $spacing-2;
   padding: $spacing-3 $spacing-4;
   background: $color-gray-50;
   border: 1px solid $color-gray-200;
   border-radius: $radius-xl;
 }
 
+.input-wrapper__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-1;
+}
+
+
+.input-wrapper__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-2;
+}
+
 .input-field {
-  flex: 1;
-  min-height: 1.5rem;
-  padding: 0;
+  width: 100%;
+  max-height: 16rem; /* ~10 lines */
   background: transparent;
   font-size: $font-size-sm;
   color: $color-gray-800;
@@ -138,5 +182,17 @@ function handleStop() {
     outline: 2px solid $color-error-light;
     outline-offset: 2px;
   }
+}
+
+/* Slide transition */
+.slide-enter-active,
+.slide-leave-active {
+  transition: opacity $transition-normal, transform $transition-normal;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY($spacing-2);
 }
 </style>

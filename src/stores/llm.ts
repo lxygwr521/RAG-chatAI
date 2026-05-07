@@ -1,9 +1,12 @@
 import * as TransformUtils  from '@/utils/transform'
+import type { UploadFile } from '@/components/chat/types'
+
 interface Payload {
   model: string;
   stream: boolean;
   messages: Array<{ role: string; content: string }>;
 }
+
 // llm api 地址
 const url = 'https://api.deepseek.com/chat/completions';
 
@@ -23,11 +26,39 @@ const payload: Payload = {
   ]
 };
 
+async function readFiles(files: UploadFile[]): Promise<string> {
+  const results = await Promise.all(
+    files.map(
+      (item) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = () => reject(new Error(`读取文件失败: ${item.file.name}`))
+          reader.readAsText(item.file)
+        })
+    )
+  )
+  return results
+    .map((content, i) => {
+      const { name } = files[i].file
+      return `[文件: ${name}]\n${content}`
+    })
+    .join('\n\n')
+}
+
+async function buildPrompt(question: string, files: UploadFile[]): Promise<string> {
+  if (files.length === 0) return question
+  const fileContent = await readFiles(files)
+  return `${fileContent}\n\n---\n\n${question}`.trim()
+}
+
+
 // 发起 fetch 请求
-async function callLLM(messages: string, controller?: AbortController):Promise<{error: number
+async function callLLM(question: string, files: UploadFile[], controller?: AbortController): Promise<{error: number
   reader: ReadableStreamDefaultReader<string> | null}> {
-  if(payload && messages){
-    payload.messages[1]!.content = messages
+  const prompt = await buildPrompt(question, files)
+  if(payload){
+    payload.messages[1]!.content = prompt
   }
   try {
     const response = await fetch(url, {
@@ -39,8 +70,6 @@ async function callLLM(messages: string, controller?: AbortController):Promise<{
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-
-
     if(response.body){
       const reader = response.body
       .pipeThrough(new TextDecoderStream())

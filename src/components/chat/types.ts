@@ -2,6 +2,7 @@ export interface UserMessage {
   role: 'user'
   content: string
   timestamp: number
+  files?: UploadFile[]
 }
 
 export interface AssistantMessage {
@@ -9,16 +10,19 @@ export interface AssistantMessage {
   content: string
   timestamp: number
   isTyping?: boolean
-}
-
+  }
 // Props passed to components — no role needed, component already knows its role
-export interface UserMessageProps {
-  content: string
-  timestamp: number
-}
+// export interface UserMessageProps {
+//   content: string
+//   timestamp: number
+//   files?: UploadFile[]
+// }
 
 export interface AssistantMessageProps {
-  content: string
-  timestamp: number
-  isTyping?: boolean
+
+}
+export interface UploadFile {
+  id: string
+  file: File
+  url?: string
 }

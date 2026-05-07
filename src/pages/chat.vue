@@ -13,7 +13,7 @@
           >
           <UserMsg
             v-if="msg.role === 'user'"
-            :message="{ content: msg.content, timestamp: msg.timestamp }"
+            :message="{ role: 'user', content: msg.content, timestamp: msg.timestamp, files: msg.files }"
             class="animate-message"
           />
           <AssistantMsg
@@ -49,11 +49,11 @@
 </template>
 
 <script setup lang="ts">
-import callLLM from '@/stores/index'
+import callLLM from '@/stores/llm'
 import { ref, reactive, nextTick, watch } from 'vue'
 import NavTitle from '@/components/NavTitle/index.vue'
 import { UserMsg, AssistantMsg, ChatInput, QuickQuestions, mockQuestions } from '@/components/chat/mock'
-import type { UserMessage, AssistantMessage } from '@/components/chat/types'
+import type { UserMessage, AssistantMessage, UploadFile } from '@/components/chat/types'
 import NoData from '@/components/noData.vue'
 import { renderMarkdownText } from '@/utils/markdown'
 import { mockEventStreamText } from '@/mock'
@@ -84,17 +84,19 @@ watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
 
-function handleSend(question: string) {
+function handleSend(question: string, files?:UploadFile[]) {
   // debugger
+
   const userMsg: UserMessage = {
     role: 'user',
     content: question,
     timestamp: Date.now(),
+    files: files || null
   }
   messages.value.push(userMsg)
   isGenerating.value = true
   currentController = new AbortController()
-  callLLM(question, currentController).then(async res => {
+  callLLM(question, files, currentController).then(async res => {
     if(res.reader){
       currentReader = res.reader
       const reader = currentReader
@@ -121,7 +123,6 @@ function handleSend(question: string) {
             textBuffer.value = textBuffer.value.substring(10)
           }
 
-          // assistantMsg.content = markdownToHtml(rawText)
         }
       }
       isGenerating.value = false

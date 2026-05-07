@@ -1,4 +1,4 @@
-/* Markdown 内容渲染样式（用于 v-html 动态内容，scoped 无法穿透） */
+/* Markdown 内容渲染样式 */
 @import "tailwindcss";
 
 .markdown-wrapper {

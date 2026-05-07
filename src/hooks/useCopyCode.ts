@@ -1,5 +1,4 @@
 export function useCopyCode() {
-    debugger
     const timeoutIdMap: WeakMap<HTMLElement, NodeJS.Timeout> = new WeakMap()
     window.addEventListener('click', (e) => {
       const el = e.target as HTMLElement
