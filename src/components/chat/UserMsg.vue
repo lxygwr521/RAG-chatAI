@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { UserMessage} from './types'
+import type {UserMessageProps} from './types'
 
 defineProps<{
-  message: UserMessage
+  message: UserMessageProps
 }>()
 
 function formatSize(bytes: number): string {

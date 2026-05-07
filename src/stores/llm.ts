@@ -47,7 +47,7 @@ async function readFiles(files: UploadFile[]): Promise<string> {
 }
 
 async function buildPrompt(question: string, files: UploadFile[]): Promise<string> {
-  if (files.length === 0) return question
+  if (!files || files.length === 0) return question
   const fileContent = await readFiles(files)
   return `${fileContent}\n\n---\n\n${question}`.trim()
 }

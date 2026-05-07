@@ -19,7 +19,16 @@ export interface AssistantMessage {
 // }
 
 export interface AssistantMessageProps {
+  content: string
+  timestamp: number
+  isTyping?: boolean
 
+}
+
+export interface UserMessageProps {
+  content: string
+  timestamp: number
+  files?: UploadFile[]
 }
 export interface UploadFile {
   id: string

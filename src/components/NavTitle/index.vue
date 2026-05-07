@@ -46,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { getDefaultCompilerOptions } from 'typescript'
 import { ref } from 'vue'
 
 interface ModelOption {
@@ -61,6 +62,9 @@ const modelOptions: ModelOption[] = [
 
 const selectedModel = ref(modelOptions[0]!.value)
 
+defineExpose({
+  selectedModel
+})
 function handleNav() {
   console.log('跳转github')
 }

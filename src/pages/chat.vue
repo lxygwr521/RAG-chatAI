@@ -1,7 +1,7 @@
 <template>
   <div class="chat-page flex flex-col h-screen bg-white">
     <!-- 导航标题 -->
-    <NavTitle />
+    <NavTitle  ref="navTitleRef"/>
 
     <!-- 聊天主区域 -->
     <main class="chat-main flex-1 overflow-y-auto" ref="chatMainRef">
@@ -13,7 +13,7 @@
           >
           <UserMsg
             v-if="msg.role === 'user'"
-            :message="{ role: 'user', content: msg.content, timestamp: msg.timestamp, files: msg.files }"
+            :message="{ content: msg.content, timestamp: msg.timestamp, files: msg.files }"
             class="animate-message"
           />
           <AssistantMsg
@@ -44,22 +44,28 @@
       @submit="handleSend"
       @stop="handleStop"
     />
-    <button @click="handleTest">测试</button>
   </div>
 </template>
 
 <script setup lang="ts">
 import callLLM from '@/stores/llm'
-import { ref, reactive, nextTick, watch } from 'vue'
+import { ref, reactive, nextTick, watch, computed } from 'vue'
 import NavTitle from '@/components/NavTitle/index.vue'
-import { UserMsg, AssistantMsg, ChatInput, QuickQuestions, mockQuestions } from '@/components/chat/mock'
+import UserMsg from '@/components/chat/UserMsg.vue'
+import AssistantMsg from '@/components/chat/AssistantMsg.vue'
+import ChatInput from '@/components/chat/ChatInput.vue'
+import QuickQuestions from '@/components/chat/QuickQuestions.vue'
+import { mockQuestions, mockEventStreamText } from '@/mock'
 import type { UserMessage, AssistantMessage, UploadFile } from '@/components/chat/types'
 import NoData from '@/components/noData.vue'
-import { renderMarkdownText } from '@/utils/markdown'
-import { mockEventStreamText } from '@/mock'
 const messages = ref<(UserMessage | AssistantMessage)[]>([])
 const chatMainRef = ref<HTMLElement | null>(null)
 const isGenerating = ref(false)
+//模型选择 目前只有模拟和deepseek
+const navTitleRef = ref<InstanceType<typeof NavTitle> | null>(null)
+const useMock = computed(() => navTitleRef.value?.selectedModel === 'mock')
+let mockInterval: ReturnType<typeof setInterval> | null = null
+
 let currentReader: ReadableStreamDefaultReader<string> | null = null
 let currentController: AbortController | null = null
 const textBuffer = ref('')
@@ -73,28 +79,26 @@ function scrollToBottom() {
   })
 }
 
-function handleTest() {
-  const html = renderMarkdownText(mockEventStreamText)
-  console.log(html)
-  document.body.innerHTML = html
-  document.body.classList.add('markdown-wrapper')
-}
 // 监听消息变化，自动滚动
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
 
 function handleSend(question: string, files?:UploadFile[]) {
-  // debugger
-
   const userMsg: UserMessage = {
     role: 'user',
     content: question,
     timestamp: Date.now(),
-    files: files || null
+    files
   }
   messages.value.push(userMsg)
   isGenerating.value = true
+  debugger
+  if (useMock.value) {
+    simulateMockResponse()
+    return
+  }
+
   currentController = new AbortController()
   callLLM(question, files, currentController).then(async res => {
     if(res.reader){
@@ -137,7 +141,36 @@ function handleSend(question: string, files?:UploadFile[]) {
   })
 }
 
+// 模拟流式输出
+function simulateMockResponse() {
+  const assistantMsg = reactive<AssistantMessage>({
+    role: 'assistant',
+    content: '',
+    timestamp: Date.now(),
+  })
+  messages.value.push(assistantMsg)
+  const chunkSize = 20
+  let index = 0
+  mockInterval = setInterval(() => {
+    if (index >= mockEventStreamText.length) {
+      clearInterval(mockInterval!)
+      mockInterval = null
+      isGenerating.value = false
+      return
+    }
+    const chunk = mockEventStreamText.slice(index, index + chunkSize)
+    assistantMsg.content += chunk
+    index += chunkSize
+  }, 50)
+}
+
 function handleStop() {
+  if (mockInterval) {
+    clearInterval(mockInterval)
+    mockInterval = null
+    isGenerating.value = false
+    return
+  }
   currentController?.abort()
   currentController = null
   if (currentReader) {
