@@ -6,9 +6,6 @@
 // biome-ignore lint: disable
 export {}
 declare global {
-  interface Window {
-    $message: ReturnType<typeof import('naive-ui').useMessage>
-  }
   const EffectScope: typeof import('vue').EffectScope
   const IconChevronDown: typeof import('./components/icons/index').IconChevronDown
   const IconCloud: typeof import('./components/icons/index').IconCloud
@@ -77,9 +74,7 @@ declare global {
   const useDialog: typeof import('naive-ui').useDialog
   const useId: typeof import('vue').useId
   const useLoadingBar: typeof import('naive-ui').useLoadingBar
-declare global {
   const useMessage: typeof import('naive-ui').useMessage
-}
   const useModel: typeof import('vue').useModel
   const useNotification: typeof import('naive-ui').useNotification
   const useSlots: typeof import('vue').useSlots

@@ -33,21 +33,25 @@
       </div>
 
       <!-- 帮助按钮 -->
-      <button
-        type="button"
-        class=" w-6 h-6 p-0 rounded-full bg-[#8b5cf6] text-white cursor-pointer hover:bg-[#7c3aed] focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2"
-        title="帮助"
-        aria-label="帮助"
-      >
-        <span class="text-[0.8125rem] font-semibold leading-1">?</span>
-      </button>
+      <n-tooltip trigger="hover" placement="bottom">
+        <template #trigger>
+          <button
+            type="button"
+            class=" w-6 h-6 p-0 rounded-full bg-[#8b5cf6] text-white cursor-pointer hover:bg-[#7c3aed] focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2"
+            aria-label="帮助"
+          >
+            <span class="text-[0.8125rem] font-semibold leading-1">?</span>
+          </button>
+        </template>
+        如需测试其他模型，需要本地配置 apiKey
+      </n-tooltip>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { getDefaultCompilerOptions } from 'typescript'
 import { ref } from 'vue'
+import { NTooltip } from 'naive-ui'
 
 interface ModelOption {
   value: string

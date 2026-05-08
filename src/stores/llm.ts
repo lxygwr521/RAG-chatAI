@@ -1,35 +1,29 @@
-import * as TransformUtils  from '@/utils/transform'
+import * as TransformUtils from '@/utils/transform'
 import type { UploadFile } from '@/components/chat/types'
 
-interface Payload {
-  model: string;
-  stream: boolean;
-  messages: Array<{ role: string; content: string }>;
+interface LLMMessage {
+  role: string
+  content: string
 }
 
-// llm api 地址
-const url = 'https://api.deepseek.com/chat/completions';
+interface Payload {
+  model: string
+  stream: boolean
+  messages: LLMMessage[]
+}
 
-// 请求头配置
+const url = 'https://api.deepseek.com/chat/completions'
+
 const headers = {
   'Content-Type': 'application/json',
-  'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`
-};
+  Authorization: `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`
+}
 
-// 请求体数据
-const payload: Payload = {
-  model: 'deepseek-chat',
-  stream: true,
-  messages: [
-    { role: "system", content: "You are a helpful assistant." },
-    { role: "user", content: "你好 DeepSeek" }
-  ]
-};
-
+// 文件内容读取
 async function readFiles(files: UploadFile[]): Promise<string> {
   const results = await Promise.all(
     files.map(
-      (item) =>
+      item =>
         new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = () => resolve(reader.result as string)
@@ -40,55 +34,57 @@ async function readFiles(files: UploadFile[]): Promise<string> {
   )
   return results
     .map((content, i) => {
-      const { name } = files[i].file
+      const { name } = files[i]!.file
       return `[文件: ${name}]\n${content}`
     })
     .join('\n\n')
 }
 
-async function buildPrompt(question: string, files: UploadFile[]): Promise<string> {
+// 构建用户消息内容（含附件）
+async function buildUserContent(
+  question: string,
+  files: UploadFile[]
+): Promise<string> {
   if (!files || files.length === 0) return question
   const fileContent = await readFiles(files)
   return `${fileContent}\n\n---\n\n${question}`.trim()
 }
 
-
 // 发起 fetch 请求
-async function callLLM(question: string, files: UploadFile[], controller?: AbortController): Promise<{error: number
-  reader: ReadableStreamDefaultReader<string> | null}> {
-  const prompt = await buildPrompt(question, files)
-  if(payload){
-    payload.messages[1]!.content = prompt
+// messages 包含完整的对话历史（system + 交替的 user/assistant）
+async function callLLM(
+  messages: LLMMessage[],
+  controller?: AbortController
+): Promise<{ error: number; reader: ReadableStreamDefaultReader<string> | null }> {
+  const payload: Payload = {
+    model: 'deepseek-chat',
+    stream: true,
+    messages
   }
+
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
-      signal: controller?.signal,
-    });
+      signal: controller?.signal
+    })
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
-    if(response.body){
+    if (response.body) {
       const reader = response.body
-      .pipeThrough(new TextDecoderStream())
-      .pipeThrough(TransformUtils.splitStream('\n'))
-      .getReader()
-      return {error:0,reader:reader as ReadableStreamDefaultReader<string>}
-    }else{
-      return {error:1,reader:null}
+        .pipeThrough(new TextDecoderStream())
+        .pipeThrough(TransformUtils.splitStream('\n'))
+        .getReader()
+      return { error: 0, reader: reader as ReadableStreamDefaultReader<string> }
+    } else {
+      return { error: 1, reader: null }
     }
-  } catch (error) {
-    return {error:1,reader:null}
+  } catch {
+    return { error: 1, reader: null }
   }
 }
-// while (true) {
-//   const { done, value } = await reader.read();
 
-//   if (done) break;
-
-//   console.log(value); // 一行数据
-// }
-
+export { buildUserContent, readFiles, type LLMMessage }
 export default callLLM

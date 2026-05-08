@@ -1,3 +1,12 @@
+export interface Conversation {
+  id: string
+  title: string
+  createdAt: number
+  model: string
+}
+
+export type Message = UserMessage | AssistantMessage
+
 export interface UserMessage {
   role: 'user'
   content: string
@@ -10,7 +19,7 @@ export interface AssistantMessage {
   content: string
   timestamp: number
   isTyping?: boolean
-  }
+}
 // Props passed to components — no role needed, component already knows its role
 // export interface UserMessageProps {
 //   content: string

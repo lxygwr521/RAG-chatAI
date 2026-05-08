@@ -13,6 +13,8 @@ declare module 'vue' {
   export interface GlobalComponents {
     AssistantMsg: typeof import('./src/components/chat/AssistantMsg.vue')['default']
     ChatInput: typeof import('./src/components/chat/ChatInput.vue')['default']
+    ConversationItem: typeof import('./src/components/layout/ConversationItem.vue')['default']
+    ConversationSidebar: typeof import('./src/components/layout/ConversationSidebar.vue')['default']
     FileItem: typeof import('./src/components/chat/FileItem.vue')['default']
     FileUpload: typeof import('./src/components/chat/FileUpload.vue')['default']
     Loading: typeof import('./src/components/Loading.vue')['default']
