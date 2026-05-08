@@ -12,7 +12,7 @@
 | 状态管理 | Pinia（持久化） |
 | LLM API | DeepSeek Chat API（流式） |
 | Markdown | markdown-it + highlight.js + KaTeX + Mermaid |
-| 工具库 | UnoCSS、Vitest、Vue DevTools |
+| 工具库 | Vitest、Vue DevTools |
 
 ## 项目结构
 
@@ -65,5 +65,4 @@ VITE_DEEPSEEK_API_KEY=your_api_key_here
 - 文件上传与内容注入
 - 流式 AI 回复（支持中断）
 - Markdown 渲染（代码高亮、LaTeX 公式、Mermaid 图表）
-- 暗色模式支持
 - 本地数据持久化（localStorage）
