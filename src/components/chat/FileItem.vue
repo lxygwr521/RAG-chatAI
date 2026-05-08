@@ -3,6 +3,7 @@ import { type UploadFile } from './types'
 
 const props = defineProps<{
   item: UploadFile
+  disableDelete?:Boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,7 +48,7 @@ function getBadgeColor(): string {
     </div>
 
     <!-- Delete button -->
-    <button
+    <button v-if="!disableDelete"
       type="button"
       class="file-item__delete"
       @click="emit('remove', item.id)"

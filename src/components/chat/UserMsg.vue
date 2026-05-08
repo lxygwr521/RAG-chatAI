@@ -30,7 +30,7 @@ function getBadgeColor(type: string): string {
     <div class="user-msg-content">
       <!-- File attachments -->
       <div v-if="message.files && message.files.length > 0" class="user-msg-files">
-        <FileItem v-for="file in message.files" :key="file.id" :item="file" />
+        <FileItem v-for="file in message.files" :key="file.id" :item="file" :disable-delete="true" />
       </div>
 
       <!-- Text content -->

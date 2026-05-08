@@ -1,54 +1,69 @@
 # chat-mvp-fork
 
-This template should help get you started developing with Vue 3 in Vite.
+基于 Vue 3 的 AI 对话 Web 应用，支持流式响应与 Markdown 渲染。
 
-## Recommended IDE Setup
+## 技术栈
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+| 类别 | 技术 |
+|------|------|
+| 框架 | Vue 3 + TypeScript |
+| 构建 | Vite 8 |
+| UI | Naive UI + Tailwind CSS v4 + SCSS |
+| 状态管理 | Pinia（持久化） |
+| LLM API | DeepSeek Chat API（流式） |
+| Markdown | markdown-it + highlight.js + KaTeX + Mermaid |
+| 工具库 | UnoCSS、Vitest、Vue DevTools |
 
-## Recommended Browser Setup
+## 项目结构
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+```
+src/
+├── components/
+│   ├── chat/            # 聊天核心组件
+│   │   ├── AssistantMsg.vue   # AI 回复消息
+│   │   ├── UserMsg.vue        # 用户消息
+│   │   ├── ChatInput.vue      # 输入框
+│   │   ├── FileUpload.vue     # 文件上传
+│   │   ├── QuickQuestions.vue # 快捷问题
+│   │   └── types.ts           # 消息类型定义
+│   └── layout/          # 布局组件
+│       ├── ConversationSidebar.vue  # 侧边栏
+│       └── ConversationItem.vue      # 会话项
+├── pages/
+│   └── chat.vue         # 主聊天页面
+├── stores/
+│   ├── conversation.ts  # 会话管理 + 消息管理
+│   └── llm.ts           # LLM API 调用
+├── mock/
+│   └── mock.md          # Mock 流式响应内容
+└── utils/
+    ├── markdown.ts      # Markdown 渲染
+    ├── transform.ts     # 流式数据处理
+    └── highlights.ts    # 代码高亮
+```
 
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## 快速开始
 
 ```sh
 pnpm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 pnpm dev
 ```
 
-### Type-Check, Compile and Minify for Production
+## 配置
 
-```sh
-pnpm build
+在项目根目录创建 `.env` 文件：
+
+```env
+VITE_DEEPSEEK_API_KEY=your_api_key_here
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+> **Mock 模式**：不配置 API Key 时，自动切换为本地 Mock 模式，模拟流式输出。
 
-```sh
-pnpm test:unit
-```
+## 功能特性
 
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-pnpm lint
-```
+- 多会话管理（创建、切换、删除、持久化）
+- 文件上传与内容注入
+- 流式 AI 回复（支持中断）
+- Markdown 渲染（代码高亮、LaTeX 公式、Mermaid 图表）
+- 暗色模式支持
+- 本地数据持久化（localStorage）

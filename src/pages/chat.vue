@@ -20,17 +20,16 @@
             style="width: 100%;"
           />
           </template>
+             <!-- 底部占位，确保新消息在可视区域 -->
+          <div class="h-10 shrink-0" />
         </template>
         <template v-else>
           <NoData />
           <QuickQuestions
-            v-if="!conversationStore.currentConversationId"
             :questions="mockQuestions"
             @select="handleQuickQuestion"
           />
         </template>
-        <!-- 底部占位，确保新消息在可视区域 -->
-        <div class="h-20 shrink-0" />
       </div>
     </main>
 
@@ -105,6 +104,7 @@ function buildLLMMessages(question: string, files: UploadFile[]): Promise<Array<
     content: msg.content
   }))
 
+   
   return buildUserContent(question, files).then(userContent => {
     const messages = [
       SYSTEM_MESSAGE,

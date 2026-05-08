@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed } from 'vue'
-import type { UserMessage, AssistantMessage } from '@/components/chat/types'
+import type { Message } from '@/components/chat/types'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface Conversation {
@@ -93,20 +93,20 @@ export const useConversationStore = defineStore('conversation', () => {
 // ---------------------------------------------------------------------------
 export const useMessageStore = defineStore('message', () => {
   // reactive 保证嵌套对象变更触发响应式更新
-  const messageMap = reactive<Record<string, (UserMessage | AssistantMessage)[]>>({})
+  const messageMap = reactive<Record<string, Message[]>>({})
 
-  function getMessages(conversationId: string): (UserMessage | AssistantMessage)[] {
+  function getMessages(conversationId: string): Message[] {
     return messageMap[conversationId] ?? []
   }
 
-  function addMessage(conversationId: string, msg: UserMessage | AssistantMessage) {
+  function addMessage(conversationId: string, msg: Message) {
     if (!messageMap[conversationId]) {
       messageMap[conversationId] = []
     }
     messageMap[conversationId].push(msg)
   }
 
-  function updateLastMessage(conversationId: string, update: Partial<AssistantMessage>) {
+  function updateLastMessage(conversationId: string, update: Partial<Message>) {
     const messages = messageMap[conversationId]
     if (!messages || messages.length === 0) return
     const last = messages[messages.length - 1]

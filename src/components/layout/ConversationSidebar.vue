@@ -34,24 +34,31 @@ function handleClearAll() {
   conversationStore.clearAllConversations()
   messageStore.clearAllMessages()
 }
-
-function getModelLabel(model: string) {
-  const map: Record<string, string> = {
-    mock: '模拟数据模型',
-    deepseek: 'DeepSeek'
-  }
-  return map[model] ?? model
-}
 </script>
 
 <template>
   <aside class="sidebar">
     <!-- 顶部区域：Logo + 模型选择 -->
-    <header class="sidebar__header">
-      <div class="sidebar__brand">
+    <header class="sidebar__header " >
+      <div class="flex justify-between">
+        <div class="sidebar__brand">
         <div class="icon-cloud"></div>
         <span class="sidebar__brand-text">AI 对话</span>
       </div>
+      <n-tooltip trigger="hover" placement="bottom">
+        <template #trigger>
+          <button
+            type="button"
+            class=" w-6 h-6 p-0 rounded-full bg-[#8b5cf6] text-white cursor-pointer hover:bg-[#7c3aed] focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2"
+            aria-label="帮助"
+          >
+            <span class="text-[0.8125rem] font-semibold leading-1">?</span>
+          </button>
+        </template>
+        如需测试其他模型，需要本地配置 apiKey
+      </n-tooltip>
+      </div>
+    
 
       <div class="sidebar__model-select">
         <div class="icon-model"></div>
@@ -103,6 +110,7 @@ function getModelLabel(model: string) {
       <n-popconfirm
         v-if="conversationStore.conversations.length > 0"
         @positive-click="handleClearAll"
+        positive-text="确认" negative-text="取消"
       >
         <template #trigger>
           <button class="sidebar__clear-btn">
