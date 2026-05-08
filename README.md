@@ -1,4 +1,4 @@
-# chat-mvp-fork
+# chatAI
 
 基于 Vue 3 的 AI 对话 Web 应用，支持流式响应与 Markdown 渲染。
 
