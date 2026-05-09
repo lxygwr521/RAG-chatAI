@@ -11,11 +11,11 @@ import 'katex/dist/contrib/mhchem.min.js'
 
 import 'highlight.js/styles/github.css' //github主题
 //mermaid相关
-import {
-  markdownItMermaidPlugin,
-  renderMermaidSSE,
-  transformMermaid
-} from '@nzoth/toolkit'
+// import {
+//   markdownItMermaidPlugin,
+//   renderMermaidSSE,
+//   transformMermaid
+// } from '@nzoth/toolkit'
 
 
 // Markdown 文本渲染的主文件，负责将 Markdown 文本转换为 HTML。
@@ -24,7 +24,6 @@ import {
 //Markdown 转换流程：
 // 1. 处理 <think> 标签（AI 思考过程）
 // 2. 处理数学公式
-// 3. 处理 Mermaid 图表
 // 4. 渲染为 HTML
 
 const md = new MarkdownIt({
@@ -40,7 +39,7 @@ md.use(markdownItHighlight, {
   })
   // @ts-ignore
   .use(markdownItKatex.default)
-  .use(markdownItMermaidPlugin)
+  // .use(markdownItMermaidPlugin)
 
 
 const transformMathMarkdown = (markdownText: string) => {
@@ -125,11 +124,11 @@ const transformThinkMarkdown = (source: string): string => {
 export const renderMarkdownText = (content: string) => {
   const thinkTransformed = transformThinkMarkdown(content)
   const mathTransformed = transformMathMarkdown(thinkTransformed)
-  const mermaidTransformed = transformMermaid(mathTransformed)
-  return md.render(mermaidTransformed)
+  // const mermaidTransformed = transformMermaid(mathTransformed)
+  return md.render(mathTransformed)
 }
 
 // 触发 Mermaid 渲染
-export const renderMermaidProcess = (callback = () => {}) => {
-  renderMermaidSSE(callback)
-}
+// export const renderMermaidProcess = (callback = () => {}) => {
+//   renderMermaidSSE(callback)
+// }

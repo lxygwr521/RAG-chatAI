@@ -1,6 +1,17 @@
 # Mock 流式响应内容
 
-本文件用于本地 Mock 模式下的流式响应模拟，模拟 DeepSeek Chat API 的 SSE 流式输出。
+# **💡说明**
+
+> - 请注意，本次展示回复内容为**模拟 Event Stream 静态输出**，非真实接口调用。
+>
+>- 如果需要调用真实的 GPT 接口，请拉取本仓库，在本地开发环境中配置相应的 `API` 密钥和`接口地址`。
+
+## <a target="_blank" href="https://github.com/lxygwr521/chatAI">关于本仓库</a>
+
+![GitHub Pages](https://img.shields.io/badge/gh--pages-passing-brightgreen)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Thanks](https://img.shields.io/badge/thanks-%E2%9D%A4-pink)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
 ---
 
@@ -31,26 +42,9 @@ console.log(quickSort([3, 6, 8, 10, 1, 2, 1]));
 
 ---
 
-## Mock 2：数学公式
-
-一元二次方程 \(ax^2 + bx + c = 0\) 的求根公式为：
-
-$$
-x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
-$$
-
-其中判别式 \(\Delta = b^2 - 4ac\) 决定方程根的性质：
-
-| 判别式 | 方程根情况 |
-|--------|-----------|
-| \(\Delta > 0\) | 两个不相等的实根 |
-| \(\Delta = 0\) | 两个相等的实根（重根） |
-| \(\Delta < 0\) | 两个共轭复根 |
-
----
 
 
-## Mock 3：一般对话
+## Mock2：一般对话
 
 你好！我是 chatAI，一个基于 Vue 3 的 AI 对话助手。
 
