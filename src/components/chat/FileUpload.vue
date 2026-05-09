@@ -59,7 +59,7 @@ async function readFiles(): Promise<string> {
   // debugger
   return results
     .map((content, i) => {
-      const { name } = files.value[i].file
+      const { name } = files.value[i]!.file
       return `[文件: ${name}]\n${content}`
     })
     .join('\n\n')

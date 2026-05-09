@@ -1,4 +1,4 @@
-# chat-mvp-fork
+# chatAI
 
 基于 Vue 3 的 AI 对话 Web 应用，支持流式响应与 Markdown 渲染。
 
@@ -12,7 +12,7 @@
 | 状态管理 | Pinia（持久化） |
 | LLM API | DeepSeek Chat API（流式） |
 | Markdown | markdown-it + highlight.js + KaTeX + Mermaid |
-| 工具库 | UnoCSS、Vitest、Vue DevTools |
+| 工具库 | Vitest、Vue DevTools |
 
 ## 项目结构
 
@@ -67,3 +67,28 @@ VITE_DEEPSEEK_API_KEY=your_api_key_here
 - Markdown 渲染（代码高亮、LaTeX 公式、Mermaid 图表）
 - 暗色模式支持
 - 本地数据持久化（localStorage）
+
+## 在线 Demo
+
+**https://pdsuwwz.github.io/chatAI/**
+
+Demo 运行在 Mock 模式下，所有对话内容为本地模拟数据，无需配置任何 API Key。
+
+## 部署说明（GitHub Pages）
+
+仓库已配置 GitHub Actions，每次推送到 `main` 分支会自动构建并部署到 GitHub Pages。
+
+> **注意**：GitHub Pages 构建使用 `.env.github` 配置，不包含任何真实 API 调用密钥，始终以 Mock 模式运行。
+
+### 手动部署
+
+```sh
+pnpm install
+pnpm deploy
+```
+
+### 启用 GitHub Pages
+
+1. 进入仓库 **Settings → Pages**
+2. Source 选择 **GitHub Actions**
+3. 下一次 push 到 `main` 分支后自动部署

@@ -148,7 +148,7 @@ function handleSend(question: string, files?: UploadFile[]) {
   buildLLMMessages(question, files ?? []).then(async messages => {
     if (currentController?.signal.aborted) return
 
-    const res = await callLLM(messages, currentController)
+    const res = await callLLM(messages, currentController ?? undefined)
 
     if (res.reader) {
       currentReader = res.reader

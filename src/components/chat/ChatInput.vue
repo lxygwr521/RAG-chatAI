@@ -33,7 +33,7 @@ async function handleSubmit() {
   emit('submit', value, uploadedFiles.value)
   inputValue.value = ''
   fileUploadRef.value?.clearFiles()
-  textareaRef.value.style.height = 'auto'
+  textareaRef.value!.style.height = 'auto'
 }
 
 function handleStop() {

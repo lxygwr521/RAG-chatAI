@@ -4,7 +4,6 @@
     "allowSyntheticDefaultImports": true, //允许合成默认导入
     "noUncheckedIndexedAccess": true, // Extra safety for array and object lookups, but may have false positives.
     "noImplicitAny": false, //允许隐式any
-    "baseUrl": "./",
     "types": ["vite/client", "node"],
     "paths": {
       "@/*": ["./src/*"]

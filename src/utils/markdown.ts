@@ -16,7 +16,7 @@ import {
   renderMermaidSSE,
   transformMermaid
 } from '@nzoth/toolkit'
-import '@nzoth/toolkit/styles'
+
 
 // Markdown 文本渲染的主文件，负责将 Markdown 文本转换为 HTML。
 //Latex数学公式支持 
