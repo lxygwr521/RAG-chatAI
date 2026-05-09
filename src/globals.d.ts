@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 // Global type augmentations for naive-ui message plugin on window
 import type { Message } from 'naive-ui'
 

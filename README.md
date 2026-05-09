@@ -41,6 +41,11 @@ src/
     ├── transform.ts     # 流式数据处理
     └── highlights.ts    # 代码高亮
 ```
+## 在线 Demo
+
+**https://chat-ai-bos7.vercel.app/**
+
+Demo 运行在 Mock 模式下，所有对话内容为本地模拟数据，无需配置任何 API Key。
 
 ## 快速开始
 
@@ -67,17 +72,7 @@ VITE_DEEPSEEK_API_KEY=your_api_key_here
 - Markdown 渲染（代码高亮、LaTeX 公式、Mermaid 图表）
 - 本地数据持久化（localStorage）
 
-## 在线 Demo
-
-**https://chat-ai-bos7.vercel.app/**
-
-Demo 运行在 Mock 模式下，所有对话内容为本地模拟数据，无需配置任何 API Key。
 
 
-### 手动部署
 
-```sh
-pnpm install
-pnpm deploy
-```
 
