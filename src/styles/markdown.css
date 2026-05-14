@@ -134,13 +134,21 @@
 
   .think-wrapper {
     padding-inline-start: 0.875rem;
-    color: #8b8b8b;
-    border-inline-start: 2px solid #e5e5e5;
+    color: #9ca3af;
+    border-inline-start: 2px solid #d1d5db;
+    font-style: italic;
+    opacity: 0.85;
+    margin-bottom: 0.75rem;
 
     p {
       line-height: 1.5rem;
     }
   }
+}
+
+.dark .markdown-wrapper .think-wrapper {
+  color: #6b7280;
+  border-inline-start-color: #4b5563;
 }
 
 /* ============================================

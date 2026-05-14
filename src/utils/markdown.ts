@@ -72,7 +72,7 @@ const transformThinkMarkdown = (source: string): string => {
 
   const classNameWrapper = 'think-wrapper'
 
-  // 转义 <think/> 中的 <script/>
+  // 转义 <think/> 中的 <script/> ,防止被解析为可执行的script代码，避免 XSS（跨站脚本攻击）
   const escapeScriptTags = (content: string): string => {
     // <script> 或 <script ...>
     let escaped = content.replace(/<script([^>]*)>/gi, '&lt;script$1&gt;')
@@ -85,46 +85,46 @@ const transformThinkMarkdown = (source: string): string => {
   }
 
   for (let i = 0; i < source.length; i++) {
-    const char = source[i]
-    const nextChars = source.slice(i, i + 7)
-    const endChars = source.slice(i, i + 8)
+    const char = source[i] 
+    const nextChars = source.slice(i, i + 7) // '<think>' 长度 7
 
+    const endChars = source.slice(i, i + 8)  // '</think>' 长度 8
+    // 对于think开始和结束标签特殊处理
     if (!inThinkBlock && nextChars === '<think>') {
       inThinkBlock = true
-      result += `<div class="${ classNameWrapper }">`
+      result += `<div class="${ classNameWrapper }">` // 开始 think 标签
       i += 6
       continue
     }
 
     if (inThinkBlock && endChars === '</think>') {
       inThinkBlock = false
-      result += '</div>'
+      result += '</div>'  // 结束 think 标签
       i += 7
       continue
     }
 
     if (inThinkBlock) {
-      buffer += char
+      buffer += char  // 收集 think 内容
     } else {
-      result += char
+      result += char  //收集非think内容
     }
   }
 
   if (buffer) {
     const escapedBuffer = escapeScriptTags(buffer)
     const thinkContent = md.render(escapedBuffer)
-
     result = result.replace(`<div class="${ classNameWrapper }">`, `<div class="${ classNameWrapper }">${ thinkContent }`)
   }
 
   return result
 }
 
-
 export const renderMarkdownText = (content: string) => {
   const thinkTransformed = transformThinkMarkdown(content)
   const mathTransformed = transformMathMarkdown(thinkTransformed)
   // const mermaidTransformed = transformMermaid(mathTransformed)
+  // debugger
   return md.render(mathTransformed)
 }
 

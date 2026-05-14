@@ -1,24 +1,29 @@
 import * as TransformUtils from '@/utils/transform'
 import type { UploadFile } from '@/components/chat/types'
-
+import { useConversationStore } from '../stores/conversation'
 interface LLMMessage {
   role: string
   content: string
 }
 
+type ThinkingType = 'enabled' | 'disabled'
+type ReasoningEffort = 'low' | 'medium' | 'high'
+
 interface Payload {
   model: string
-  stream: boolean
   messages: LLMMessage[]
+  stream?: boolean
+  thinking?: {
+    type: ThinkingType
+  }
+  reasoning_effort?: ReasoningEffort
 }
 
 const url = 'https://api.deepseek.com/chat/completions'
-
 const headers = {
   'Content-Type': 'application/json',
   Authorization: `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`
 }
-
 // 文件内容读取
 async function readFiles(files: UploadFile[]): Promise<string> {
   const results = await Promise.all(
@@ -56,10 +61,18 @@ async function callLLM(
   messages: LLMMessage[],
   controller?: AbortController
 ): Promise<{ error: number; reader: ReadableStreamDefaultReader<string> | null }> {
+  const conversationStore = useConversationStore()
+  const isThinkModel: ThinkingType = conversationStore.selectedModel === 'deepseek-think' ? 'enabled' : 'disabled'
+
   const payload: Payload = {
-    model: 'deepseek-chat',
+    model: 'deepseek-v4-flash',
+    thinking: { "type": isThinkModel },
     stream: true,
     messages
+  }
+
+  if (isThinkModel === 'enabled') {
+    payload.reasoning_effort = 'high'
   }
 
   try {

@@ -44,7 +44,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, watch } from 'vue'
-import callLLM, { buildUserContent } from '@/stores/llm'
+import callLLM, { buildUserContent } from '@/api/llm'
 import { useConversationStore, useMessageStore } from '@/stores/conversation'
 import UserMsg from '@/components/chat/UserMsg.vue'
 import AssistantMsg from '@/components/chat/AssistantMsg.vue'
@@ -156,10 +156,11 @@ function handleSend(question: string, files?: UploadFile[]) {
       const assistantMsg = reactive<AssistantMessage>({
         role: 'assistant',
         content: '',
+        thinkingContent: '',
         timestamp: Date.now()
       })
       messageStore.addMessage(convId, assistantMsg)
-
+      let isThinking = false
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -168,16 +169,29 @@ function handleSend(question: string, files?: UploadFile[]) {
 
         try {
           const data = JSON.parse(value)
+          const thinkingContent = data.choices?.[0]?.delta?.reasoning_content
           const content = data.choices?.[0]?.delta?.content
-
-          if (content) {
+        // 开始处理推理过程
+          if (content === null && thinkingContent) {
+            if (!isThinking) {
+             textBuffer.value += '<think>'
+             isThinking = true
+            }
+            textBuffer.value += thinkingContent
+          }
+          // 当 content 出现时，说明推理结束
+          else if (content !== null && !thinkingContent) {
+            if (isThinking) {
+              textBuffer.value += '</think> \n\n'
+              isThinking = false
+            }
             textBuffer.value += content
-            if (textBuffer.value.length > 0) {
-              const nextChunk = textBuffer.value.substring(0, 10)
+          }
+          if (textBuffer.value.length > 0) {
+              const nextChunk = textBuffer.value.substring(0, 10) //长度n小于10 会截取到n
               assistantMsg.content += nextChunk
               textBuffer.value = textBuffer.value.substring(10)
             }
-          }
         } catch {
           // 非 JSON 数据跳过
         }

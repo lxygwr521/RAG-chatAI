@@ -68,7 +68,8 @@ function handleClearAll() {
           aria-label="选择模型"
         >
           <option value="mock">模拟数据模型</option>
-          <option value="deepseek">DeepSeek</option>
+          <option value="deepseek">DeepSeek-fast</option>
+          <option value="deepseek-think">DeepSeek-think</option>
         </select>
       </div>
     </header>

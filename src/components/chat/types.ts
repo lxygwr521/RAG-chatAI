@@ -17,6 +17,7 @@ export interface UserMessage {
 export interface AssistantMessage {
   role: 'assistant'
   content: string
+  thinkingContent?:string,
   timestamp: number
   isTyping?: boolean
 }
@@ -29,6 +30,7 @@ export interface AssistantMessage {
 
 export interface AssistantMessageProps {
   content: string
+  thinkingContent?:string,
   timestamp: number
   isTyping?: boolean
 

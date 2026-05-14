@@ -71,8 +71,9 @@ VITE_DEEPSEEK_API_KEY=your_api_key_here
 - 流式 AI 回复（支持中断）
 - Markdown 渲染（代码高亮、LaTeX 公式、Mermaid 图表）
 - 本地数据持久化（localStorage）
+- 支持深度思考模式和快速模式切换
 
-
-
-
-
+## 项目截图
+![1](./images/1.png) 
+![2](./images/2.png)
+![3](./images/3.png)

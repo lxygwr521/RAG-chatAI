@@ -9,7 +9,7 @@ import { createDiscreteApi } from 'naive-ui'
 
 const { message } = createDiscreteApi(['message'])
 window.$message = message   // 挂载到全局
-const pinia = createPinia()
+export const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 
