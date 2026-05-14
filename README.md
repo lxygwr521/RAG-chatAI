@@ -43,7 +43,7 @@ src/
 ```
 ## 在线 Demo
 
-**https://chat-ai-bos7.vercel.app/**
+**https://chat-ai-fawn-nine.vercel.app/**
 
 Demo 运行在 Mock 模式下，所有对话内容为本地模拟数据，无需配置任何 API Key。
 
