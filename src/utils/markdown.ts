@@ -57,6 +57,7 @@ const transformMathMarkdown = (markdownText: string) => {
   ])
 
   return data.reduce<string>((result, segment) => {
+    // debugger
     if (segment.type === 'text') {
       return result + segment.data
     }

@@ -1,54 +1,66 @@
 <template>
-  <div class="chat-page flex flex-col h-screen bg-white">
-    <!-- 聊天主区域 -->
-    <main class="chat-main flex-1 overflow-y-auto" ref="chatMainRef">
-      <div class="chat-messages flex flex-col min-h-full py-4 px-5 md:px-8">
-        <template v-if="currentMessages.length !== 0">
-          <template
-            v-for="msg in currentMessages"
-            :key="msg.timestamp"
-          >
-          <UserMsg
-            v-if="msg.role === 'user'"
-            :message="{ content: msg.content, timestamp: msg.timestamp, files: msg.files }"
-            class="animate-message"
-          />
-          <AssistantMsg
-            v-else
-            :message="{ content: msg.content, timestamp: msg.timestamp }"
-            class="animate-message"
-            style="width: 100%;"
-          />
+  <div class="chat-page flex h-screen bg-white">
+    <div class="chat-main-wrapper flex flex-col flex-1 min-w-0">
+      <!-- 聊天主区域 -->
+      <main class="chat-main flex-1 overflow-y-auto" ref="chatMainRef">
+        <div class="chat-messages flex flex-col min-h-full py-4 px-5 md:px-8">
+          <template v-if="currentMessages.length !== 0">
+            <div
+              v-for="msg in currentMessages"
+              :key="msg.timestamp"
+              :ref="el => setMsgRef(msg.timestamp, el as HTMLElement)"
+              :data-msg-ts="msg.timestamp"
+            >
+            <UserMsg
+              v-if="msg.role === 'user'"
+              :message="{ content: msg.content, timestamp: msg.timestamp, files: msg.files }"
+              class="animate-message"
+            />
+            <AssistantMsg
+              v-else
+              :message="{ content: msg.content, timestamp: msg.timestamp }"
+              class="animate-message"
+              style="width: 100%;"
+            />
+            </div>
+               <!-- 底部占位，确保新消息在可视区域 -->
+            <div class="h-10 shrink-0" />
           </template>
-             <!-- 底部占位，确保新消息在可视区域 -->
-          <div class="h-10 shrink-0" />
-        </template>
-        <template v-else>
-          <NoData />
-          <QuickQuestions
-            :questions="mockQuestions"
-            @select="handleQuickQuestion"
-          />
-        </template>
-      </div>
-    </main>
+          <template v-else>
+            <NoData />
+            <QuickQuestions
+              :questions="mockQuestions"
+              @select="handleQuickQuestion"
+            />
+          </template>
+        </div>
+      </main>
 
-    <!-- 输入区域 -->
-    <ChatInput
-      :is-generating="isGenerating"
-      @submit="handleSend"
-      @stop="handleStop"
+      <!-- 输入区域 -->
+      <ChatInput
+        :is-generating="isGenerating"
+        @submit="handleSend"
+        @stop="handleStop"
+      />
+    </div>
+
+    <!-- 对话记录导航栏 -->
+    <ChatNav
+      :messages="currentMessages"
+      :active-index="activeNavIndex"
+      @scroll-to="scrollToMessage"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick, watch } from 'vue'
+import { ref, reactive, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import callLLM, { buildUserContent } from '@/api/llm'
 import { useConversationStore, useMessageStore } from '@/stores/conversation'
 import UserMsg from '@/components/chat/UserMsg.vue'
 import AssistantMsg from '@/components/chat/AssistantMsg.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
+import ChatNav from '@/components/chat/ChatNav.vue'
 import QuickQuestions from '@/components/chat/QuickQuestions.vue'
 import { mockQuestions, mockEventStreamText } from '@/mock'
 import type { UserMessage, AssistantMessage, UploadFile } from '@/components/chat/types'
@@ -67,6 +79,59 @@ const currentMessages = computed(() => {
 const chatMainRef = ref<HTMLElement | null>(null)
 const isGenerating = ref(false)
 const useMock = computed(() => conversationStore.selectedModel === 'mock')
+
+// 消息 DOM 引用，用于导航跳转
+const msgRefMap = new Map<number, HTMLElement>()
+function setMsgRef(timestamp: number, el: HTMLElement | null) {
+  if (el) {
+    msgRefMap.set(timestamp, el)
+    observer?.observe(el)
+  } else {
+    msgRefMap.delete(timestamp)
+  }
+}
+
+// 当前可见消息索引，用于导航高亮
+const activeNavIndex = ref(-1)
+let observer: IntersectionObserver | null = null
+
+function scrollToMessage(timestamp: number) {
+  debugger
+  const el = msgRefMap.get(timestamp)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+onMounted(() => {
+  observer = new IntersectionObserver(
+    entries => {
+      let closestIdx = -1
+      let minTop = Infinity
+      entries.forEach(entry => {
+        const el = entry.target as HTMLElement
+        const ts = Number(el.dataset.msgTs)
+        if (entry.isIntersecting && entry.boundingClientRect.top < minTop) {
+          minTop = entry.boundingClientRect.top
+          closestIdx = currentMessages.value.findIndex(m => m.timestamp === ts)
+        }
+      })
+      if (closestIdx !== -1) {
+        activeNavIndex.value = closestIdx
+      }
+    },
+    { root: chatMainRef.value, rootMargin: '-40px 0px -60% 0px', threshold: 0 }
+  )
+
+  // 观察已有消息元素
+  msgRefMap.forEach(el => {
+    observer!.observe(el)
+  })
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+})
 
 let mockInterval: ReturnType<typeof setInterval> | null = null
 let currentReader: ReadableStreamDefaultReader<string> | null = null

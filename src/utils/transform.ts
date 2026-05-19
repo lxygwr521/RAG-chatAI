@@ -1,6 +1,7 @@
 // 处理SSE格式的数据
 const processSSE = (buffer: string, controller: TransformStreamDefaultController, splitOn: string) => {
     const parts = buffer.split(splitOn)
+    parts.pop() // 取出最后一个可能不完整的片段（如 data: hello\n），返回给调用方拼接到下次的 buffer 中。
     const lastPart = parts.pop()
   
     for (const part of parts) {
@@ -9,6 +10,7 @@ const processSSE = (buffer: string, controller: TransformStreamDefaultController
   
       if (trimmedPart.startsWith('data:')) {
         const content = trimmedPart.replace(/^data: /, '').trim()
+        // 通过 controller.enqueue 将提取的每一条消息内容（字符串）逐块推送给后续消费者。
         if (content) {
           try {
             JSON.parse(content)
