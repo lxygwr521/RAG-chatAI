@@ -96,7 +96,6 @@ const activeNavIndex = ref(-1)
 let observer: IntersectionObserver | null = null
 
 function scrollToMessage(timestamp: number) {
-  debugger
   const el = msgRefMap.get(timestamp)
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -169,7 +168,7 @@ function buildLLMMessages(question: string, files: UploadFile[]): Promise<Array<
     content: msg.content
   }))
 
-   
+
   return buildUserContent(question, files).then(userContent => {
     const messages = [
       SYSTEM_MESSAGE,
@@ -242,6 +241,7 @@ function handleSend(question: string, files?: UploadFile[]) {
              textBuffer.value += '<think>'
              isThinking = true
             }
+
             textBuffer.value += thinkingContent
           }
           // 当 content 出现时，说明推理结束

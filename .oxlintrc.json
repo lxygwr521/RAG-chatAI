@@ -4,7 +4,8 @@
   "env": {
     "browser": true
   },
-  "categories": {
-    "correctness": "error"
+  "categories": {},
+  "rules": {
+    "no-debugger": "off"
   }
 }

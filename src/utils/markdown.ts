@@ -8,7 +8,6 @@ import markdownItKatex from '@vscode/markdown-it-katex'
 import splitAtDelimiters from 'katex/contrib/auto-render/splitAtDelimiters'
 import 'katex/dist/katex.min.css'
 import 'katex/dist/contrib/mhchem.min.js'
-
 import 'highlight.js/styles/github.css' //github主题
 //mermaid相关
 // import {
@@ -19,7 +18,7 @@ import 'highlight.js/styles/github.css' //github主题
 
 
 // Markdown 文本渲染的主文件，负责将 Markdown 文本转换为 HTML。
-//Latex数学公式支持 
+//Latex数学公式支持
 //图标支持
 //Markdown 转换流程：
 // 1. 处理 <think> 标签（AI 思考过程）
@@ -41,7 +40,6 @@ md.use(markdownItHighlight, {
   .use(markdownItKatex.default)
   // .use(markdownItMermaidPlugin)
 
-
 const transformMathMarkdown = (markdownText: string) => {
   const data = splitAtDelimiters(markdownText, [
     {
@@ -57,11 +55,11 @@ const transformMathMarkdown = (markdownText: string) => {
   ])
 
   return data.reduce<string>((result, segment) => {
-    // debugger
+
     if (segment.type === 'text') {
       return result + segment.data
     }
-    const math = segment.display ? `$$${ segment.data }$$` : `$${ segment.data }$`
+    const math = segment.display ? `$$${ segment.data }$$` : `$${ segment.data }$` //根据 segment.display 的布尔值，动态决定使用 行内公式 还是 块级公式 的界定符来包裹
     return result + math
   }, '')
 }
@@ -86,7 +84,7 @@ const transformThinkMarkdown = (source: string): string => {
   }
 
   for (let i = 0; i < source.length; i++) {
-    const char = source[i] 
+    const char = source[i]
     const nextChars = source.slice(i, i + 7) // '<think>' 长度 7
 
     const endChars = source.slice(i, i + 8)  // '</think>' 长度 8

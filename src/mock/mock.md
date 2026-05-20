@@ -58,3 +58,22 @@ console.log(quickSort([3, 6, 8, 10, 1, 2, 1]));
 你可以点击下方的快捷问题快速开始，也可以直接输入任何问题。试试看吧！
 
 ## Mock3：数学公式
+
+* 纳维-斯托克斯方程
+
+$$
+\rho\left(\frac{\partial \vec{u}}{\partial t} + \vec{u} \cdot \nabla\vec{u}\right) = -\nabla p + \nabla \cdot \left[\mu\left(\nabla\vec{u} + (\nabla\vec{u})^T\right)\right] + \vec{f}
+$$
+
+* 薛定谔波动方程
+
+$$
+i\hbar\frac{\partial \psi(\vec{r},t)}{\partial t} = \left[-\frac{\hbar^2}{2m}\nabla^2 + V(\vec{r},t)\right]\psi(\vec{r},t)
+$$
+
+## Mock3：表格
+| 技术栈 | 说明 | 官网 |
+|--------|------|------|
+| React | 用户界面库 | [链接](https://reactjs.org) |
+| Vue.js | 渐进式框架 | [链接](https://vuejs.org) |
+| Angular | 完整的框架 | [链接](https://angular.io) |

@@ -88,6 +88,7 @@ async function callLLM(
     if (response.body) {
       const reader = response.body
         .pipeThrough(new TextDecoderStream())
+        //缓冲区确保数据完整性（根据分隔符\n判断） +  sse格式处理
         .pipeThrough(TransformUtils.splitStream('\n'))
         .getReader()
       return { error: 0, reader: reader as ReadableStreamDefaultReader<string> }

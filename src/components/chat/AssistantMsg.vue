@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { AssistantMessageProps } from './types'
 import { renderMarkdownText } from '@/utils/markdown'
 
@@ -7,11 +7,21 @@ const props = defineProps<{
   message: AssistantMessageProps
 }>()
 
-const emit = defineEmits<{
+defineEmits<{
   stop: [value: boolean]
 }>()
 
-const displayedContent = computed(() => renderMarkdownText(props.message.content))
+const rawContent = computed(() => props.message.content)
+const displayedContent = ref('')
+
+let rafId: number | null = null
+watch(rawContent, (val) => {
+  if (rafId !== null) return
+  rafId = requestAnimationFrame(() => {
+    displayedContent.value = renderMarkdownText(val)
+    rafId = null
+  })
+}, { immediate: true })
 </script>
 
 <template>
@@ -59,7 +69,7 @@ const displayedContent = computed(() => renderMarkdownText(props.message.content
 
 .assistant-msg-content {
   max-width: 100%;
-  
+
 }
 
 
