@@ -41,30 +41,6 @@ function removeFile(id: string) {
 function clearFiles() {
   files.value = []
 }
-
-async function readFiles(): Promise<string> {
-  //读取每个文件 返回结果数组
-  const results = await Promise.all(
-    files.value.map(
-      (item) =>
-        new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = () => reject(new Error(`读取文件失败: ${item.file.name}`))
-
-          reader.readAsText(item.file)
-        })
-    )
-  )
-  // debugger
-  return results
-    .map((content, i) => {
-      const { name } = files.value[i]!.file
-      return `[文件: ${name}]\n${content}`
-    })
-    .join('\n\n')
-}
-
 function validateFile(file: File): string | null {
   if (!isAllowedType(file)) return `不支持 ${file.name.split('.').pop()} 文件类型`
   if (file.size > MAX_SIZE) return '文件大小超出限制（最大 10MB）'
@@ -97,7 +73,6 @@ function handleClick() {
 
 defineExpose({
   files,
-  readFiles,
   removeFile,
   clearFiles,
 })

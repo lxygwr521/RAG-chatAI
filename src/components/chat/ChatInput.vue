@@ -67,7 +67,7 @@ function handleRemoveFile(id: string) {
           @input="autoResize"
           @keydown.enter.exact.prevent="handleSubmit"
         />
-  
+
         <div class="input-wrapper__actions">
           <FileUpload
             v-if="!isGenerating"
