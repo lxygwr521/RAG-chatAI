@@ -55,7 +55,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
-import callLLM, { buildUserContent } from '@/api/llm'
+import callLLM, { buildUserContent, type LLMMessage } from '@/api/llm'
+import { buildContext } from '@/utils/context'
 import { useConversationStore, useMessageStore } from '@/stores/conversation'
 import UserMsg from '@/components/chat/UserMsg.vue'
 import AssistantMsg from '@/components/chat/AssistantMsg.vue'
@@ -161,22 +162,29 @@ function generateTitle(question: string): string {
 // 初始化系统消息
 const SYSTEM_MESSAGE = { role: 'system', content: 'You are a helpful assistant.' }
 
-// 将 store 中的消息转换为 LLM API 格式
-function buildLLMMessages(question: string, files: UploadFile[]): Promise<Array<{ role: string; content: string }>> {
+// 将 store 中的消息转换为 LLM API 格式，超阈值时自动滚动摘要
+async function buildLLMMessages(question: string, files: UploadFile[]): Promise<LLMMessage[]> {
   const history = currentMessages.value.map(msg => ({
     role: msg.role,
     content: msg.content
   }))
 
-
-  return buildUserContent(question, files).then(userContent => {
-    const messages = [
-      SYSTEM_MESSAGE,
-      ...history,
-      { role: 'user', content: userContent }
-    ]
-    return messages
+  const userContent = await buildUserContent(question, files)
+  const convId = conversationStore.currentConversationId!
+  const summaryState = messageStore.getSummary(convId) //从store中获取已有的摘要信息
+  //判断是否超出阈值进行摘要压缩
+  const result = await buildContext({
+    systemPrompt: SYSTEM_MESSAGE.content,
+    history,
+    userContent, //当前用户消息
+    existingSummary: summaryState?.text, //已压缩的
+    summarizedCount: summaryState?.summarizedCount//前N条已压缩
   })
+  if (result.newSummary) {
+    messageStore.setSummary(convId, result.newSummary.text, result.newSummary.coveredCount)
+  }
+
+  return result.messages
 }
 
 function handleSend(question: string, files?: UploadFile[]) {

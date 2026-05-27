@@ -95,6 +95,24 @@ export const useMessageStore = defineStore('message', () => {
   // reactive 保证嵌套对象变更触发响应式更新
   const messageMap = reactive<Record<string, Message[]>>({})
 
+  // 每个会话的滚动摘要状态
+  const summaryMap = reactive<Record<string, {
+    text: string //累积摘要文本
+    summarizedCount: number //本质是一个游标指针，标记了"消息数组里到哪个位置为止已经被压缩过了"
+  }>>({})
+
+  function getSummary(conversationId: string) {
+    return summaryMap[conversationId] ?? null
+  }
+
+  function setSummary(conversationId: string, text: string, summarizedCount: number) {
+    summaryMap[conversationId] = { text, summarizedCount }
+  }
+
+  function clearSummary(conversationId: string) {
+    delete summaryMap[conversationId]
+  }
+
   function getMessages(conversationId: string): Message[] {
     return messageMap[conversationId] ?? []
   }
@@ -117,17 +135,23 @@ export const useMessageStore = defineStore('message', () => {
 
   function deleteConversationMessages(conversationId: string) {
     delete messageMap[conversationId]
+    delete summaryMap[conversationId]
   }
 
   function clearAllMessages() {
     Object.keys(messageMap).forEach(key => delete messageMap[key])
+    Object.keys(summaryMap).forEach(key => delete summaryMap[key])
   }
 
   return {
     messageMap,
+    summaryMap,
     getMessages,
     addMessage,
     updateLastMessage,
+    getSummary,
+    setSummary,
+    clearSummary,
     deleteConversationMessages,
     clearAllMessages
   }

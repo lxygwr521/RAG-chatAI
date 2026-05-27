@@ -13,6 +13,7 @@ interface Payload {
   model: string
   messages: LLMMessage[]
   stream?: boolean
+  max_tokens?: number
   thinking?: {
     type: ThinkingType
   }
@@ -68,6 +69,7 @@ async function callLLM(
     model: 'deepseek-v4-flash',
     thinking: { "type": isThinkModel },
     stream: true,
+    max_tokens: 8192,
     messages
   }
 
