@@ -7,9 +7,6 @@
 export {}
 declare global {
   const EffectScope: typeof import('vue').EffectScope
-  const IconChevronDown: typeof import('./components/icons/index').IconChevronDown
-  const IconCloud: typeof import('./components/icons/index').IconCloud
-  const IconLeaf: typeof import('./components/icons/index').IconLeaf
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
   const computed: typeof import('vue').computed
   const createApp: typeof import('vue').createApp

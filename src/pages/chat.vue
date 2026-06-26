@@ -8,6 +8,7 @@
             <div
               v-for="msg in currentMessages"
               :key="msg.timestamp"
+              v-memo="[msg.content]"
               :ref="el => setMsgRef(msg.timestamp, el as HTMLElement)"
               :data-msg-ts="msg.timestamp"
             >
@@ -56,7 +57,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import callLLM, { buildUserContent, type LLMMessage } from '@/api/llm'
-import { buildContext } from '@/utils/context'
+import { buildContext } from '@/utils/context/context'
 import { useConversationStore, useMessageStore } from '@/stores/conversation'
 import UserMsg from '@/components/chat/UserMsg.vue'
 import AssistantMsg from '@/components/chat/AssistantMsg.vue'
@@ -104,22 +105,27 @@ function scrollToMessage(timestamp: number) {
 }
 
 onMounted(() => {
+  //监听消息元素是否进入聊天区域视口。
   observer = new IntersectionObserver(
+    //遍历所有可见元素
     entries => {
       let closestIdx = -1
       let minTop = Infinity
       entries.forEach(entry => {
         const el = entry.target as HTMLElement
         const ts = Number(el.dataset.msgTs)
+        //该元素是否进入观察区域&&取所有可见消消息中距离视口顶部最近的那条
         if (entry.isIntersecting && entry.boundingClientRect.top < minTop) {
           minTop = entry.boundingClientRect.top
           closestIdx = currentMessages.value.findIndex(m => m.timestamp === ts)
         }
       })
+      //高亮元素的索引
       if (closestIdx !== -1) {
         activeNavIndex.value = closestIdx
       }
     },
+    //判定的滚动容器
     { root: chatMainRef.value, rootMargin: '-40px 0px -60% 0px', threshold: 0 }
   )
 
@@ -209,7 +215,6 @@ function handleSend(question: string, files?: UploadFile[]) {
   }
   messageStore.addMessage(convId, userMsg)
   isGenerating.value = true
-
   if (useMock.value) {
     simulateMockResponse(convId)
     return
@@ -231,7 +236,9 @@ function handleSend(question: string, files?: UploadFile[]) {
         thinkingContent: '',
         timestamp: Date.now()
       })
+      //store中的persist 插件会监听state,由于流式输出变化频繁，不断触发localStorage.setItem(...)
       messageStore.addMessage(convId, assistantMsg)
+
       let isThinking = false
       while (true) {
         const { done, value } = await reader.read()
@@ -249,7 +256,6 @@ function handleSend(question: string, files?: UploadFile[]) {
              textBuffer.value += '<think>'
              isThinking = true
             }
-
             textBuffer.value += thinkingContent
           }
           // 当 content 出现时，说明推理结束

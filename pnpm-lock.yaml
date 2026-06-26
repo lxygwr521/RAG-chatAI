@@ -26,6 +26,9 @@ importers:
       katex:
         specifier: ^0.16.45
         version: 0.16.45
+      lodash-es:
+        specifier: ^4.18.1
+        version: 4.18.1
       markdown-it:
         specifier: ^14.1.1
         version: 14.1.1
