@@ -1,0 +1,102 @@
+"""SSE streaming helpers — typed events and EventSourceResponse wrapper."""
+
+import json
+from dataclasses import dataclass
+from typing import AsyncGenerator
+
+from sse_starlette.sse import EventSourceResponse
+
+
+# ---------------------------------------------------------------------------
+# SSE Event types
+# ---------------------------------------------------------------------------
+
+@dataclass
+class SSEEvent:
+    """A typed SSE event with optional event name.
+
+    SSE wire format (via EventSourceResponse):
+        event: {event}
+        data: {data}
+    """
+
+    data: str | dict
+    event: str | None = None
+
+    def to_dict(self) -> dict:
+        result = {"data": self.data if isinstance(self.data, str) else json.dumps(self.data, ensure_ascii=False)}
+        if self.event:
+            result["event"] = self.event
+        return result
+
+
+# Factory functions for common event types
+
+def delta_event(content: str | None = None, reasoning_content: str | None = None) -> SSEEvent:
+    """LLM text delta — same format as DeepSeek's {choices: [{delta: ...}]}."""
+    delta: dict = {}
+    if content is not None:
+        delta["content"] = content
+    if reasoning_content is not None:
+        delta["reasoning_content"] = reasoning_content
+    return SSEEvent(
+        event="delta",
+        data={"choices": [{"delta": delta}]},
+    )
+
+
+def tool_call_event(tool_name: str, tool_call_id: str, arguments: dict) -> SSEEvent:
+    """Agent is calling a tool."""
+    return SSEEvent(
+        event="tool_call",
+        data={
+            "tool_call_id": tool_call_id,
+            "tool_name": tool_name,
+            "arguments": arguments,
+        },
+    )
+
+
+def tool_result_event(tool_call_id: str, tool_name: str, result: str, success: bool = True) -> SSEEvent:
+    """Tool execution result."""
+    return SSEEvent(
+        event="tool_result",
+        data={
+            "tool_call_id": tool_call_id,
+            "tool_name": tool_name,
+            "result": result,
+            "success": success,
+        },
+    )
+
+
+def done_event() -> SSEEvent:
+    """Stream completed."""
+    return SSEEvent(event="done", data="[DONE]")
+
+
+def error_event(message: str) -> SSEEvent:
+    """Stream error."""
+    return SSEEvent(event="error", data={"error": message})
+
+
+# ---------------------------------------------------------------------------
+# EventSourceResponse wrapper
+# ---------------------------------------------------------------------------
+
+async def sse_stream(generator: AsyncGenerator[SSEEvent | str, None]) -> EventSourceResponse:
+    """Wrap an async generator of SSEEvent into an EventSourceResponse.
+
+    Supports both SSEEvent objects (with typed events) and plain strings
+    (backward compat — treated as raw data without event type).
+    """
+    async def _wrap():
+        async for item in generator:
+            if isinstance(item, SSEEvent):
+                yield item.to_dict()
+            elif isinstance(item, dict):
+                yield item
+            else:
+                yield {"data": str(item)}
+
+    return EventSourceResponse(_wrap())
