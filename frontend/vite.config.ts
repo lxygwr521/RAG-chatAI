@@ -1,5 +1,4 @@
 import { fileURLToPath, URL } from 'node:url'
-import raw from 'vite-raw-plugin'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -19,9 +18,6 @@ export default defineConfig({
     },
   },
   plugins: [
-    raw({
-      fileRegex: /\.md$/
-    }),
     vue(),
     vueDevTools(),
     tailwindcss(),

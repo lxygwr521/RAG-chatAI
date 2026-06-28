@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
@@ -12,7 +13,7 @@ class Base(DeclarativeBase):
 
 
 async def get_db() -> AsyncSession:
-    """Yield an async database session, ensuring rollback on error."""
+    """Yield an async database session with commit on success, rollback on error."""
     async with async_session() as session:
         try:
             yield session
@@ -22,7 +23,20 @@ async def get_db() -> AsyncSession:
             raise
 
 
+# Performance indexes (CREATE IF NOT EXISTS — idempotent)
+_INDEXES = [
+    "CREATE INDEX IF NOT EXISTS idx_messages_conv_id ON messages(conversation_id)",
+    "CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_messages_role ON messages(role)",
+    "CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at)",
+    "CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON knowledge_chunks(document_id)",
+    "CREATE INDEX IF NOT EXISTS idx_documents_created ON knowledge_documents(created_at)",
+]
+
+
 async def init_db():
-    """Create all tables. Called during application startup."""
+    """Create all tables + indexes. Called during application startup."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        for idx_sql in _INDEXES:
+            await conn.execute(text(idx_sql))
