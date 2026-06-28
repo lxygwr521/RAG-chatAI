@@ -2,6 +2,8 @@
 
 基于 **Vue 3 + FastAPI + LangChain + ChromaDB** 构建的 AI 知识库对话平台。支持 DeepSeek 模型流式对话、会话管理、文档上传、Markdown 渲染和 RAG（检索增强生成）。
 
+![界面展示](image/front.png)
+
 ## 特性
 
 - **流式对话**: SSE 实时流式输出，支持推理过程展示 (`<think>` 标签)
