@@ -169,32 +169,58 @@ function generateTitle(question: string): string {
 // 初始化系统消息
 const SYSTEM_MESSAGE = { role: 'system', content: 'You are a helpful assistant.' }
 
+// 读取聊天附件的文本内容
+async function readChatFiles(files: UploadFile[]): Promise<string> {
+  const results = await Promise.all(
+    files.map(
+      item =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = () => reject(new Error(`读取文件失败: ${item.file.name}`))
+          reader.readAsText(item.file)
+        })
+    )
+  )
+  return results
+    .map((content, i) => {
+      const { name } = files[i]!.file
+      return `[文件: ${name}]\n${content}`
+    })
+    .join('\n\n')
+}
+
 // 将 store 中的消息转换为 LLM API 格式
-// 上下文压缩现在由后端处理，前端只负责构建消息数组
-function buildLLMMessages(question: string, files: UploadFile[]): LLMMessage[] {
+// 聊天附件读取后嵌入用户消息内容，知识库文档由后端 RAG 检索
+async function buildLLMMessages(question: string, files: UploadFile[]): Promise<LLMMessage[]> {
   const history: LLMMessage[] = currentMessages.value.map(msg => ({
     role: msg.role,
     content: msg.content,
   }))
 
-  // Build user content — if there are already-uploaded files, reference them
+  // 构建用户消息内容，包含聊天附件
   let userContent = question
-  // For locally uploaded files (legacy flow using FileReader), prepend content
-  // This will be replaced by server-side file handling in Phase 4
+  if (files && files.length > 0) {
+    try {
+      const fileContent = await readChatFiles(files)
+      userContent = `${fileContent}\n\n---\n\n${question}`.trim()
+    } catch (e) {
+      console.error('读取聊天附件失败:', e)
+    }
+  }
 
   const messages: LLMMessage[] = [SYSTEM_MESSAGE, ...history]
-  // Don't push user message here — the backend will build the final messages array
-  // and handle context compression. We send the messages history plus the new user
-  // content as the last message.
   messages.push({ role: 'user', content: userContent })
   return messages
 }
 
-function handleSend(question: string, files?: UploadFile[]) {
+async function handleSend(question: string, files?: UploadFile[], useRag?: boolean) {
   // 确保当前有激活的会话
   if (!conversationStore.currentConversationId) {
     conversationStore.createConversation()
   }
+
+  const _useRag = useRag ?? false
 
   const convId = conversationStore.currentConversationId!
   const conv = conversationStore.conversations.find(c => c.id === convId)
@@ -215,9 +241,9 @@ function handleSend(question: string, files?: UploadFile[]) {
 
   currentController = new AbortController()
 
-  const messages = buildLLMMessages(question, files ?? [])
+  const messages = await buildLLMMessages(question, files ?? [])
 
-  callLLM(messages, currentController ?? undefined).then(async res => {
+  callLLM(messages, currentController ?? undefined, { useRag: _useRag }).then(async res => {
     if (currentController?.signal.aborted) return
 
     if (res.reader) {

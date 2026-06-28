@@ -18,6 +18,7 @@ declare module 'vue' {
     ConversationSidebar: typeof import('./src/components/layout/ConversationSidebar.vue')['default']
     FileItem: typeof import('./src/components/chat/FileItem.vue')['default']
     FileUpload: typeof import('./src/components/chat/FileUpload.vue')['default']
+    KnowledgePanel: typeof import('./src/components/knowledge/KnowledgePanel.vue')['default']
     Loading: typeof import('./src/components/Loading.vue')['default']
     NavTitle: typeof import('./src/components/NavTitle/index.vue')['default']
     NoData: typeof import('./src/components/noData.vue')['default']

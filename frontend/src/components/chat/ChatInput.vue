@@ -8,9 +8,11 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [value: string, files: UploadFile[]]
+  submit: [value: string, files: UploadFile[], useRag: boolean]
   stop: []
 }>()
+
+const useRag = ref(false)
 
 const inputValue = ref('')
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null)
@@ -30,7 +32,7 @@ function autoResize() {
 async function handleSubmit() {
   const value = inputValue.value.trim()
   if (!value && uploadedFiles.value.length === 0) return
-  emit('submit', value, uploadedFiles.value)
+  emit('submit', value, uploadedFiles.value, useRag.value)
   inputValue.value = ''
   fileUploadRef.value?.clearFiles()
   textareaRef.value!.style.height = 'auto'
@@ -69,6 +71,17 @@ function handleRemoveFile(id: string) {
         />
 
         <div class="input-wrapper__actions">
+          <!-- RAG toggle   RAG 按钮决定这次对话要不要查知识库 -->
+          <button
+            v-if="!isGenerating"
+            type="button"
+            class="rag-toggle"
+            :class="{ active: useRag }"
+            @click="useRag = !useRag"
+            title="知识库增强检索"
+          >
+            📚 {{ useRag ? 'RAG' : 'RAG' }}
+          </button>
           <FileUpload
             v-if="!isGenerating"
             ref="fileUploadRef"
@@ -194,5 +207,30 @@ function handleRemoveFile(id: string) {
 .slide-leave-to {
   opacity: 0;
   transform: translateY($spacing-2);
+}
+
+/* RAG toggle */
+.rag-toggle {
+  padding: $spacing-1 $spacing-3;
+  border: 1px solid $color-gray-300;
+  background: white;
+  border-radius: $radius-lg;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  color: $color-gray-500;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: $color-primary-400;
+    color: $color-primary-500;
+  }
+
+  &.active {
+    background: $color-primary-50;
+    border-color: $color-primary-500;
+    color: $color-primary-600;
+    font-weight: $font-weight-semibold;
+  }
 }
 </style>

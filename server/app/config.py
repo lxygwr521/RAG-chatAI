@@ -10,8 +10,13 @@ class Settings(BaseSettings):
     deepseek_model: str = "deepseek-v4-flash"
     deepseek_max_tokens: int = 8192
 
-    # Embedding Provider (OpenAI)
-    openai_api_key: str
+    # Embedding Provider (智谱 ZhipuAI, OpenAI-compatible)
+    zhipuai_api_key: str = ""
+    zhipuai_embedding_model: str = "embedding-2"
+    zhipuai_base_url: str = "https://open.bigmodel.cn/api/paas/v4/"
+
+    # Embedding Provider (OpenAI, fallback)
+    openai_api_key: str = ""
     openai_embedding_model: str = "text-embedding-3-small"
 
     # Database

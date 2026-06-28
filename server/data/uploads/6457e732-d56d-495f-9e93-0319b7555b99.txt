@@ -1,0 +1,1 @@
+Vue 3 is a progressive JavaScript framework released in 2020. It introduced the Composition API which allows developers to organize logic by feature rather than by options. The key concepts include ref, reactive, computed, watch, and the setup function.
