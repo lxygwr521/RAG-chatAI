@@ -69,6 +69,17 @@ import NoData from '@/components/noData.vue'
 const conversationStore = useConversationStore()
 const messageStore = useMessageStore()
 
+// 切换会话时从后端加载消息
+watch(
+  () => conversationStore.currentConversationId,
+  (newId) => {
+    if (newId) {
+      messageStore.loadMessages(newId)
+    }
+  },
+  { immediate: true }
+)
+
 // Quick questions for empty state
 const quickQuestions = [
   '如何学习 Vue 3？',

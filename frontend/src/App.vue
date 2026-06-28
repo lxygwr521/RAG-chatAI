@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import ConversationSidebar from '@/components/layout/ConversationSidebar.vue'
 import Chat from './pages/chat.vue'
 import KnowledgePanel from '@/components/knowledge/KnowledgePanel.vue'
 import { useCopyCode } from '@/hooks/useCopyCode'
+import { useConversationStore } from '@/stores/conversation'
 
 defineOptions({
   name: 'App'
@@ -11,7 +12,13 @@ defineOptions({
 
 useCopyCode()
 
+const conversationStore = useConversationStore()
 const showKnowledge = ref(false)
+
+// 启动时从后端加载会话列表
+onMounted(() => {
+  conversationStore.loadFromBackend()
+})
 </script>
 
 <template>
