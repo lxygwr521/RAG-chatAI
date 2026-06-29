@@ -60,65 +60,12 @@ async def _chat_event_generator(
         existing.title = user_content[:20] + ("..." if len(user_content) > 20 else "")
 
     db.add(user_msg)
-#2. 智能上下文处理与RAG增强
-    # Build messages for the LLM, with context compression if needed
-    llm_messages = list(request.messages)
-# 2.1自动上下文压缩 防止超出上下文 
-    # Context compression: check if we need to summarize older messages
-    system_prompt = "You are a helpful assistant."
-    history = [m for m in llm_messages if m["role"] != "system"]
-    # Extract system prompt if present
-    for m in llm_messages:
-        if m["role"] == "system":
-            system_prompt = m["content"]
-            break
+# 2. 构建 LLM 消息列表（上下文压缩由 AgentService 的 SummarizationMiddleware 自动处理）
+    # SummarizationMiddleware 在 token > 60K 或消息 > 80 条时自动将旧消息压缩为摘要
+    llm_messages = [m for m in request.messages]
 
-    from app.services.context_service import build_context, ContextParams
-
-    ctx_result = await build_context(ContextParams(
-        system_prompt=system_prompt,
-        history=history[:-1] if history else [],  # exclude current user msg
-        user_content=history[-1]["content"] if history else user_content,
-        existing_summary=existing.summary_text,
-        summarized_count=existing.summarized_count,
-    ))
-
-    # Persist new summary if compression happened
-    if ctx_result.new_summary:
-        existing.summary_text = ctx_result.new_summary["text"]
-        existing.summarized_count = ctx_result.new_summary["covered_count"]
-
-    # Use compressed messages
-    llm_messages = ctx_result.messages
-# 2.2 RAG知识库检索增强：
-    # RAG: retrieve relevant knowledge base chunks if use_rag is enabled
+    # Run via AgentService — Agent decides if/when to call tools (RAG, etc.)
     rag_citations = None
-    if request.use_rag:
-        try:
-            from app.services.rag_service import augment_chat
-
-            # Extract history from the compressed messages
-            rag_history = [m for m in llm_messages if m["role"] in ("user", "assistant")]
-            # The last message is the current user message
-            rag_user = rag_history[-1]["content"] if rag_history else user_content
-            rag_prev = rag_history[:-1] if rag_history else []
-
-            rag_result = await augment_chat(
-                system_prompt=system_prompt,
-                history=rag_prev,
-                user_content=rag_user,
-            )
-
-            if rag_result.chunks_used > 0:
-                llm_messages = rag_result.messages
-                rag_citations = rag_result.citations
-        except Exception as e:
-            # RAG unavailable — continue without it
-            import logging
-            logging.getLogger(__name__).warning(f"RAG retrieval failed, continuing without: {e}")
-# 3.流式生成与结果保存
-
-    # Run via AgentService — handles both direct LLM and Agent loop
     full_content = ""
     full_thinking = ""
 # 3.1调用Agent服务流式生成

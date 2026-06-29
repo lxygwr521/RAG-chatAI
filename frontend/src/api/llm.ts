@@ -12,7 +12,6 @@ interface ChatRequest {
   conversation_id?: string
   model: string
   messages: LLMMessage[]
-  use_rag?: boolean
   files?: { id: string; filename: string }[]
 }
 
@@ -28,7 +27,6 @@ interface ChatRequest {
 async function callLLM(
   messages: LLMMessage[],
   controller?: AbortController,
-  options?: { useRag?: boolean; files?: { id: string; filename: string }[] }
 ): Promise<{ error: number; reader: ReadableStreamDefaultReader<string> | null }> {
   const conversationStore = useConversationStore()
 
@@ -36,8 +34,6 @@ async function callLLM(
     conversation_id: conversationStore.currentConversationId ?? undefined,
     model: conversationStore.selectedModel,
     messages,
-    use_rag: options?.useRag ?? false,
-    files: options?.files,
   }
 
   try {

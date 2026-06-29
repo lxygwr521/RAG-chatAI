@@ -1,7 +1,7 @@
 """LLM service — persistence helpers for chat messages.
 
-The streaming logic has moved to llm_provider.py (LLMProvider abstraction).
-This module retains only the persistence helpers used by the chat endpoint.
+Streaming logic is handled by agent_service.py (LangGraph Agent + ChatOpenAI).
+This module provides MessageModel factory functions for the chat endpoint.
 """
 
 import time

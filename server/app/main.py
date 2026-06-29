@@ -5,6 +5,16 @@ import os
 import time
 from contextlib import asynccontextmanager
 
+# Suppress protobuf "MessageFactory.GetPrototype" startup noise
+os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+
+class _NoiseFilter(logging.Filter):
+    def filter(self, record):
+        return "MessageFactory" not in record.getMessage()
+
+logging.getLogger().addFilter(_NoiseFilter())
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

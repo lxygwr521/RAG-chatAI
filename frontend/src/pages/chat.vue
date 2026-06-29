@@ -177,9 +177,6 @@ function generateTitle(question: string): string {
   return text.substring(0, 20) + '...'
 }
 
-// 初始化系统消息
-const SYSTEM_MESSAGE = { role: 'system', content: 'You are a helpful assistant.' }
-
 // 读取聊天附件的文本内容
 async function readChatFiles(files: UploadFile[]): Promise<string> {
   const results = await Promise.all(
@@ -220,18 +217,16 @@ async function buildLLMMessages(question: string, files: UploadFile[]): Promise<
     }
   }
 
-  const messages: LLMMessage[] = [SYSTEM_MESSAGE, ...history]
+  const messages: LLMMessage[] = [...history]
   messages.push({ role: 'user', content: userContent })
   return messages
 }
 
-async function handleSend(question: string, files?: UploadFile[], useRag?: boolean) {
+async function handleSend(question: string, files?: UploadFile[]) {
   // 确保当前有激活的会话
   if (!conversationStore.currentConversationId) {
     conversationStore.createConversation()
   }
-
-  const _useRag = useRag ?? false
 
   const convId = conversationStore.currentConversationId!
   const conv = conversationStore.conversations.find(c => c.id === convId)
@@ -254,7 +249,7 @@ async function handleSend(question: string, files?: UploadFile[], useRag?: boole
 
   const messages = await buildLLMMessages(question, files ?? [])
 
-  callLLM(messages, currentController ?? undefined, { useRag: _useRag }).then(async res => {
+  callLLM(messages, currentController ?? undefined).then(async res => {
     if (currentController?.signal.aborted) return
 
     if (res.reader) {

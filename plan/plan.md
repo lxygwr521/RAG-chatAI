@@ -243,17 +243,193 @@ query → embed_query → ChromaDB query(embeddings=[...], k=5)
 - CLAUDE.md 同步更新
 - 端到端验证
 
-### Phase 5: Agent (后续)
-- ReAct Agent Loop (`agent_service._agent_loop`)
-- `SearchKnowledgeTool` — RAG 检索注册为 Tool
-- Tool 调用在 SSE 流中透传 → 前端 `ToolCallBanner` 渲染
+### Phase 5: Agent (后续, 基于 LangChain 框架)
 
+> **原则**: 能用 LangChain 简化的地方优先使用 LangChain (`@tool`, `create_react_agent`, `AgentExecutor`, `Memory`)，需要精确控制的部分保留自定义实现（SSE 流式、httpx 代理）。
+
+#### 文件变更
+
+```
+server/app/
+  services/
+    agent_service.py        ← 重写: 基于 LangChain AgentExecutor
+  tools/
+    search_knowledge.py     ← 新增: LangChain @tool 包装 RAG 检索
+    search_web.py           ← 新增: Tavily/Brave 网络搜索
+    execute_python.py       ← 新增: Python REPL 执行
+  memory/
+    __init__.py             ← 新增
+    conversation_memory.py  ← 新增: ConversationSummaryBufferMemory 封装
+```
+
+#### Phase 5a: LangChain Tool 定义
+
+使用 `@tool` 装饰器替代自定义 `BaseTool`，自动生成 name/description/args_schema：
+
+```python
+# tools/search_knowledge.py
+from langchain_core.tools import tool
+from app.services.rag_service import augment_chat
+
+@tool
+def search_knowledge(query: str) -> str:
+    """搜索本地知识库，获取与 query 相关的文档片段。
+    当用户询问知识库中的内容时优先使用此工具。"""
+    result = await augment_chat(
+        system_prompt="", history=[], user_content=query
+    )
+    if not result.chunks_used:
+        return "知识库中未找到相关内容"
+    return "\n\n".join(
+        f"[来源:{c['document']}] {c['snippet']}"
+        for c in result.citations
+    )
+
+# tools/search_web.py
+@tool
+def search_web(query: str) -> str:
+    """搜索互联网获取实时信息。当知识库无法回答时使用。"""
+    ...
+
+# tools/execute_python.py
+@tool
+def execute_python(code: str) -> str:
+    """执行 Python 代码并返回结果。用于计算、数据分析等。"""
+    ...
+```
+
+#### Phase 5b: AgentExecutor 替换 AgentService
+
+基于 LangChain `create_react_agent` + `AgentExecutor`，复用现有 SSE 事件透传：
+
+```python
+# services/agent_service.py (重写)
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain_openai import ChatOpenAI
+from app.tools.search_knowledge import search_knowledge
+
+class AgentService:
+    def __init__(self):
+        self.tools = [search_knowledge, search_web, execute_python]
+        self.llm = ChatOpenAI(
+            api_key=settings.deepseek_api_key,
+            base_url=settings.deepseek_base_url,
+            model=settings.deepseek_model,
+            streaming=True,
+        )
+
+    async def run(self, messages, model, abort_event):
+        agent = create_react_agent(self.llm, self.tools, prompt=REACT_PROMPT)
+        executor = AgentExecutor(
+            agent=agent,
+            tools=self.tools,
+            max_iterations=5,
+            return_intermediate_steps=True,
+        )
+
+        # 流式执行, 透传中间步骤为 SSE 事件
+        async for event in executor.astream_events(
+            {"input": messages[-1]["content"], "chat_history": messages[:-1]},
+            version="v2",
+        ):
+            if abort_event.is_set(): break
+
+            if event["event"] == "on_chat_model_stream":
+                yield delta_event(content=event["data"]["chunk"].content)
+
+            elif event["event"] == "on_tool_start":
+                yield tool_call_event(
+                    tool_name=event["name"],
+                    tool_call_id=event["run_id"],
+                    arguments=event["data"].get("input", {}),
+                )
+
+            elif event["event"] == "on_tool_end":
+                yield tool_result_event(
+                    tool_call_id=event["run_id"],
+                    tool_name=event["name"],
+                    result=str(event["data"].get("output", ""))[:200],
+                )
+
+        yield done_event()
+```
+
+#### Phase 5c: ConversationSummaryBufferMemory
+
+用 LangChain Memory 替代自定义 `context_service.py`：
+
+```python
+# memory/conversation_memory.py
+from langchain.memory import ConversationSummaryBufferMemory
+from langchain_openai import ChatOpenAI
+
+def create_memory(conversation_id: str) -> ConversationSummaryBufferMemory:
+    return ConversationSummaryBufferMemory(
+        llm=ChatOpenAI(...),    # 用于生成摘要
+        max_token_limit=80000,  # 总 token 上限
+        memory_key="chat_history",
+        return_messages=True,
+    )
+
+# chat.py 中使用:
+memory = create_memory(conv_id)
+# 从 SQLite 加载历史消息到 memory
+for msg in db_messages:
+    memory.chat_memory.add_user_message(msg.content) if msg.role == "user"
+    else memory.chat_memory.add_ai_message(msg.content)
+
+# AgentExecutor 传入 memory
+executor = AgentExecutor(agent=agent, tools=tools, memory=memory)
+```
+
+#### Phase 5d: RAG 按钮角色变更
+
+Agent 模式下 RAG 按钮的语义变化：
+
+```
+当前 (Phase 4)                       Agent 模式 (Phase 5)
+
+📚 RAG 按钮: 手动开关                📚 按钮升级为 "Agent 模式" 开关
+  ON  → augment_chat() 检索            ON  → ReAct Agent (可自主调用 Tool)
+  OFF → 普通对话                       OFF → 直通 LLM (当前行为, 不调 Tool)
+```
+
+`use_rag` 字段改为 `agent_mode`，后端根据模式选择路径：
+
+```python
+# chat.py
+if request.agent_mode:
+    # Agent 路径: LangChain AgentExecutor, Tool 由 Agent 自主调用
+    async for event in agent_service.run(messages, model, abort_event):
+        yield event
+else:
+    # 直通路径: 简单流式, 不调 Tool (当前行为)
+    async for event in llm_provider.stream_chat(messages, model):
+        yield delta_event(content=...)
+```
+
+#### Phase 5e: 前端适配
+
+前端改动极小：
+- RAG 按钮文案改为 "Agent"（或保留 📚 图标 + 新增 🤖 标识）
+- SSE 循环已就绪: `tool_call` / `tool_result` 事件解析 + `ToolCallBanner` 渲染
+
+#### Phase 5 验证
+- ✅ Agent 模式 ON: 提问 → Agent 自主搜知识库 → 不够再搜网络 → 中间步骤实时展示
+- ✅ Agent 模式 OFF: 直通 LLM，不调任何 Tool (当前行为保持)
+- ✅ 对话记忆: 跨轮次记住上下文，自动摘要压缩
+
+
+
+### Phase 6：现在的“通用知识库问答”缺乏业务锚点，可以选定一个具体领域进行深耕。
+### Phase 7: 企业级RAG的核心竞争壁垒是检索准确率。你需要从“单一向量检索”升级为“多路召回+精排”体系。
+### Phase 8: 系统可观测性：从“黑盒”到“白盒可监控”
 ---
 
 ## 关键决策记录
 
 1. **SSE 格式**: 后端转发 DeepSeek 兼容 delta 格式 + typed events (`event: delta/citations/done`)，前端零改动兼容
-2. **LLM 调用**: `httpx` 直调 DeepSeek API，不用 LangChain ChatOpenAI——流式控制更精确
+2. **LLM 调用分层**: 简单流式对话使用 `httpx` 直调 DeepSeek（精确控制 SSE）；Agent 阶段引入 LangChain (`ChatOpenAI` + `create_react_agent` + `AgentExecutor`) 简化 ReAct 循环和 Tool 编排
 3. **Vector Store**: ChromaDB PersistentClient，手动预计算 embedding 避免内部超时
 4. **嵌入模型**: ZhipuAI `embedding-2` 为首选 (国内快)，OpenAI → ONNX 三级 fallback
 5. **Mock 模式**: 移至后端 `MockProvider`，统一 SSE 代码路径

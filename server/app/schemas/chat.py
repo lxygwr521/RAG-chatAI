@@ -12,7 +12,6 @@ class ChatRequest(BaseModel):
     conversation_id: str | None = None
     model: str = "deepseek"
     messages: list[dict]
-    use_rag: bool = False
     files: list[FileRef] | None = None
 
 
