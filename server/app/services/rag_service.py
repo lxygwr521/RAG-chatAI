@@ -1,4 +1,8 @@
-"""RAG service — orchestrates document ingestion, retrieval, and augmentation."""
+"""RAG service — orchestrates document ingestion, retrieval, and augmentation.
+
+Query rewriting uses HyDE (Hypothetical Document Embeddings):
+  user question → LLM generates hypothetical answer → embed & search → real chunks
+"""
 
 from __future__ import annotations
 
@@ -10,6 +14,7 @@ from typing import Optional
 from dataclasses import dataclass
 
 import chromadb
+from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -25,6 +30,62 @@ logger = logging.getLogger(__name__)
 # Module-level ChromaDB client (initialized in main.py lifespan)
 _chroma_client: Optional[chromadb.PersistentClient] = None
 _collection: Optional[chromadb.Collection] = None
+
+# ---------------------------------------------------------------------------
+# HyDE: Hypothetical Document Embeddings for query rewriting
+# ---------------------------------------------------------------------------
+
+HYDE_PROMPT = """你是一个知识库文档生成助手。请根据用户问题，写一段 100-200 字的假想文档片段，
+模拟知识库中可能存在的答案内容。写出关键事实、数据、流程等，风格接近正式文档。
+
+只输出假想文档内容，不要加任何前缀、说明或标记。
+
+用户问题：{question}
+假想文档片段："""
+
+# Lazy-initialized HyDE LLM (lightweight model for fast generation)
+_hyde_llm: Optional[ChatOpenAI] = None
+
+
+def _get_hyde_llm() -> ChatOpenAI:
+    """Get or create the HyDE generation LLM (lazy init, singleton)."""
+    global _hyde_llm
+    if _hyde_llm is None:
+        _hyde_llm = ChatOpenAI(
+            api_key=settings.deepseek_api_key,
+            base_url=settings.deepseek_base_url,
+            model="deepseek-v4-flash",
+            max_tokens=300,
+            temperature=0.3,
+        )
+    return _hyde_llm
+
+
+async def _generate_hypothetical_doc(question: str) -> str:
+    """Generate a hypothetical document to improve retrieval accuracy.
+
+    Uses the HyDE technique: an LLM writes a fake "answer document",
+    whose embedding will be closer to actual knowledge-base documents
+    than the original short query.
+
+    Returns the original question on failure (graceful degradation).
+    """
+    try:
+        llm = _get_hyde_llm()
+        prompt = HYDE_PROMPT.format(question=question)
+        response = await llm.ainvoke(prompt)
+        hypothetical = response.content.strip() if hasattr(response, "content") else str(response).strip()
+
+        if not hypothetical or len(hypothetical) < 10:
+            logger.warning("HyDE returned empty/short response, falling back to original query")
+            return question
+
+        logger.info("HyDE generated hypothetical doc (%d chars): %s...", len(hypothetical), hypothetical[:80])
+        return hypothetical
+
+    except Exception as e:
+        logger.warning("HyDE generation failed, falling back to original query: %s", e)
+        return question
 
 
 def init_chroma():
@@ -207,29 +268,30 @@ async def augment_chat(
     """
     collection = get_collection()
     embedder = get_embedder()
-
-    # Check if knowledge base has any documents
+	# 1. 空知识库处理
     if collection.count() == 0:
-        # No documents → no RAG
         messages: list[dict] = [{"role": "system", "content": system_prompt}]
         messages.extend(history)
         messages.append({"role": "user", "content": user_content})
         return RAGResult(messages=messages, citations=[], chunks_used=0)
 
-    # Retrieve
+    # 1.5 HyDE query rewriting — generate hypothetical doc for better retrieval
+    retrieval_query = await _generate_hypothetical_doc(user_content)
+
+    # 2. 检索 (using HyDE-generated query for embedding)
     chunks = await retrieve_context(
-        query=user_content,
+        query=retrieval_query,
         collection=collection,
         embedder=embedder,
         top_k=top_k,
     )
-
+# 2.检索与空结果处理
     if not chunks:
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(history)
         messages.append({"role": "user", "content": user_content})
         return RAGResult(messages=messages, citations=[], chunks_used=0)
-
+# 3.构建增强后的消息
     # Build augmented messages
     messages = build_rag_messages(
         system_prompt=system_prompt,

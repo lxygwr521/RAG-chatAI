@@ -26,13 +26,18 @@ from app.core.sse import (
 from app.tools.search_knowledge import search_knowledge
 
 # Language prompt for Chinese-speaking assistant with tool use
-SYSTEM_PROMPT = """你是一个智能助手，可以调用工具来获取信息。
+SYSTEM_PROMPT = SYSTEM_PROMPT = """
+你是一个智能助手。
 
-使用工具时遵循以下规则：
-1. 当用户的问题可能在知识库文档中有答案时，使用 search_knowledge 工具检索
-2. 如果知识库没有相关内容，直接基于你的知识回答
-3. 用中文回答，保持简洁准确
-4. 引用来源时标注文档名称"""
+# 工具调用策略
+1. **必须调用 search_knowledge 工具**：当用户的问题明确涉及公司内部政策、产品专有名词、技术文档内容时。
+2. **禁止调用 search_knowledge 工具**：当用户的问题属于通用常识（如“中国的首都是哪里”）、数学计算、闲聊时。
+3. **不确定时**：优先使用 `search_knowledge` 工具（因为你即使搜不到，也可以基于自己的知识回答）。
+4. 如果 `search_knowledge` 返回了内容，必须基于这些内容回答。
+5. 如果 `search_knowledge` 返回为空，基于你的知识回答。
+6. 引用来源时，标注返回结果中的文档名称。
+7. 始终用中文回答。
+"""
 
 
 class AgentService:
@@ -126,7 +131,7 @@ class AgentService:
                         text = msg.content if isinstance(msg.content, str) else str(msg.content)
                         full_content += text
                         yield delta_event(content=text)
-
+                #  只是声明“我要调用工具”，此时工具尚未实际执行
                     # Tool call detected
                     if hasattr(msg, "tool_calls") and msg.tool_calls:
                         for tc in msg.tool_calls:
@@ -135,7 +140,7 @@ class AgentService:
                                 tool_call_id=tc.get("id", ""),
                                 arguments=tc.get("args", {}),
                             )
-
+            #    当chunk是字典且角色为"tool"时，说明这是工具执行完成后的结果返回：
                 # Tool result
                 elif isinstance(chunk, dict) and chunk.get("role") == "tool":
                     yield tool_result_event(
