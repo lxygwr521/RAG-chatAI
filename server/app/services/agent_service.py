@@ -1,7 +1,7 @@
-"""Agent service — LangChain Agent with Tool calling and context summarization.
+"""Agent service --- LangChain Agent with Tool calling and context summarization.
 
 Uses:
-  - ChatOpenAI (base_url → DeepSeek) for LLM
+  - ChatOpenAI (base_url -> DeepSeek) for LLM
   - langchain.agents.create_agent for Agent loop
   - SummarizationMiddleware for automatic context compression
   - SSE typed events for streaming + tool call transparency
@@ -26,17 +26,31 @@ from app.core.sse import (
 from app.tools.search_knowledge import search_knowledge
 
 # Language prompt for Chinese-speaking assistant with tool use
-SYSTEM_PROMPT = SYSTEM_PROMPT = """
-你是一个智能助手。
+SYSTEM_PROMPT = """
+你是一个个人健康顾问，为用户提供专业、可靠的饮食营养、运动健身、疾病预防与慢病管理建议。
 
-# 工具调用策略
-1. **必须调用 search_knowledge 工具**：当用户的问题明确涉及公司内部政策、产品专有名词、技术文档内容时。
-2. **禁止调用 search_knowledge 工具**：当用户的问题属于通用常识（如“中国的首都是哪里”）、数学计算、闲聊时。
-3. **不确定时**：优先使用 `search_knowledge` 工具（因为你即使搜不到，也可以基于自己的知识回答）。
-4. 如果 `search_knowledge` 返回了内容，必须基于这些内容回答。
-5. 如果 `search_knowledge` 返回为空，基于你的知识回答。
-6. 引用来源时，标注返回结果中的文档名称。
-7. 始终用中文回答。
+## 核心原则
+1. 所有回答必须基于科学依据，不可主观臆断。
+2. 涉及用药、诊断、急症处理时，必须强调"请及时就医，遵循医生指导"。
+3. 在用户描述症状时，不做确诊，只提供可能的解释和建议就医方向。
+4. 遇到明显急症信号（胸痛、呼吸困难、意识模糊等），第一时间建议拨打 120。
+
+## 工具调用策略
+1. **必须调用 search_knowledge 工具**：
+   - 用户询问营养素、食物成分、运动方案、体检指标解读、慢性病管理等问题
+   - 用户的问题可能在已上传的健康文档（体检报告、饮食计划、病历摘要、医学指南）中有答案
+2. **禁止调用 search_knowledge 工具**：
+   - 纯闲聊（"你好"、"今天天气不错"）
+   - 完全与健康无关的通用问题
+3. **不确定时**：优先调用 search_knowledge，搜不到再基于通用健康知识回答。
+4. 如果 search_knowledge 返回了内容，基于检索内容回答并标注文档来源。
+5. 如果 search_knowledge 返回为空，基于你的通用健康知识回答，同时说明"未在您的个人健康档案中找到相关信息"。
+
+## 回答风格
+- 用温和、鼓励的语气，但保持专业严谨
+- 给出可操作的具体建议（吃什么、怎么动、何时复查）
+- 涉及数据时标注来源文档和正常参考范围
+- 始终用中文回答
 """
 
 
@@ -45,7 +59,7 @@ class AgentService:
 
     SummarizationMiddleware replaces the custom context_service.py:
     - Before each model call, checks if total tokens exceed trigger threshold
-    - If so: oldest messages → summary (via flash model), recent messages kept
+    - If so: oldest messages -> summary (via flash model), recent messages kept
     - No manual token counting or summary persistence needed
     """
 
@@ -59,9 +73,9 @@ class AgentService:
             temperature=0.7,
         )
 
-        # Summarization middleware — automatic context compression
+        # Summarization middleware --- automatic context compression
         # Trigger when 60K tokens OR 80 messages reached (whichever first)
-        # Keep the 20 most recent messages verbatim, older ones → summary
+        # Keep the 20 most recent messages verbatim, older ones -> summary
         summarization = SummarizationMiddleware(
             model=ChatOpenAI(
                 api_key=settings.deepseek_api_key,
@@ -113,7 +127,7 @@ class AgentService:
         full_content = ""
 
         try:
-            # LangGraph agent streaming — yields message chunks + tool events
+            # LangGraph agent streaming --- yields message chunks + tool events
             # SummarizationMiddleware hooks into before_model automatically
             async for chunk in self._agent.astream(
                 {"messages": input_messages},
@@ -131,7 +145,7 @@ class AgentService:
                         text = msg.content if isinstance(msg.content, str) else str(msg.content)
                         full_content += text
                         yield delta_event(content=text)
-                #  只是声明“我要调用工具”，此时工具尚未实际执行
+                #  只是声明"我要调用工具"，此时工具尚未实际执行
                     # Tool call detected
                     if hasattr(msg, "tool_calls") and msg.tool_calls:
                         for tc in msg.tool_calls:
