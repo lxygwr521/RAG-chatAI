@@ -100,10 +100,25 @@ def init_chroma():
         path=settings.chroma_persist_dir,
         settings=chromadb.Settings(anonymized_telemetry=False),
     )
-    _collection = _chroma_client.get_or_create_collection(
-        name=settings.chroma_collection_name,
-        embedding_function=None,  # Manually embed before add()
-    )
+    try:
+        _collection = _chroma_client.get_or_create_collection(
+            name=settings.chroma_collection_name,
+            embedding_function=None,  # Manually embed before add()
+        )
+    except KeyError:
+        # ChromaDB version upgrade may break config format (_type field missing)
+        logger.warning(
+            "ChromaDB collection config is incompatible, recreating collection "
+            "(existing vectors will be re-indexed on next upload)"
+        )
+        try:
+            _chroma_client.delete_collection(name=settings.chroma_collection_name)
+        except Exception:
+            pass
+        _collection = _chroma_client.create_collection(
+            name=settings.chroma_collection_name,
+            embedding_function=None,
+        )
     logger.info(f"ChromaDB initialized: {settings.chroma_persist_dir}")
 
 
@@ -223,12 +238,13 @@ async def delete_document(doc_id: str, doc: KnowledgeDocument) -> None:
     """Delete a document: remove file, SQLite records, and ChromaDB vectors."""
     collection = get_collection()
 
-    # Delete from ChromaDB
-    chroma_ids = [f"{doc_id}_{i}" for i in range(doc.chunk_count)]
-    try:
-        collection.delete(ids=chroma_ids)
-    except Exception as e:
-        logger.warning(f"ChromaDB delete warning: {e}")
+    # Delete from ChromaDB (skip if no chunks — e.g., document stuck in processing/error)
+    if doc.chunk_count > 0:
+        chroma_ids = [f"{doc_id}_{i}" for i in range(doc.chunk_count)]
+        try:
+            collection.delete(ids=chroma_ids)
+        except Exception as e:
+            logger.warning(f"ChromaDB delete warning: {e}")
 
     # Delete source file
     try:

@@ -68,6 +68,7 @@ async def _chat_event_generator(
     rag_citations = None
     full_content = ""
     full_thinking = ""
+    assistant_persisted = False  # Track whether we already persisted the message
 # 3.1调用Agent服务流式生成
     try:
         # llm_messages（包含系统提示词、历史总结、RAG上下文和当前问题）
@@ -96,7 +97,7 @@ async def _chat_event_generator(
         if rag_citations:
             yield SSEEvent(event="citations", data={"citations": rag_citations})
 # 3.3 持久化助手消息
-        # Persist assistant message
+        # Persist assistant message (normal completion path)
         if full_content:
             citations_json = json.dumps(rag_citations, ensure_ascii=False) if rag_citations else None
             assistant_msg = persist_assistant_message(
@@ -106,36 +107,20 @@ async def _chat_event_generator(
                 citations_json=citations_json,
             )
             db.add(assistant_msg)
+            assistant_persisted = True
 
         # Update conversation timestamp
         existing.updated_at = int(time.time() * 1000)
 
     finally:
-        # Always persist partial content on abort
-        if full_content:
-            existing_msg = await _get_last_assistant_msg(db, conv_id)
-            if not existing_msg:
-                assistant_msg = persist_assistant_message(
-                    conv_id,
-                    full_content,
-                    full_thinking if full_thinking else None,
-                )
-                db.add(assistant_msg)
-
-
-async def _get_last_assistant_msg(db: AsyncSession, conv_id: str):
-    """Check if an assistant message was already persisted for this request."""
-    from sqlalchemy import select
-    from app.models.conversation import Message as MessageModel
-
-    result = await db.execute(
-        select(MessageModel)
-        .where(MessageModel.conversation_id == conv_id)
-        .where(MessageModel.role == "assistant")
-        .order_by(MessageModel.id.desc())
-        .limit(1)
-    )
-    return result.scalar_one_or_none()
+        # Persist partial content on abort (only if not already persisted above)
+        if full_content and not assistant_persisted:
+            assistant_msg = persist_assistant_message(
+                conv_id,
+                full_content,
+                full_thinking if full_thinking else None,
+            )
+            db.add(assistant_msg)
 
 
 @router.post("/chat")

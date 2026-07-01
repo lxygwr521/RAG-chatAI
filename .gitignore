@@ -38,5 +38,13 @@ dist/
 # Vitest
 __screenshots__/
 
+# Python
+__pycache__/
+*.pyc
+
+# SQLite
+*.db-shm
+*.db-wal
+
 # Vite
 *.timestamp-*-*.mjs

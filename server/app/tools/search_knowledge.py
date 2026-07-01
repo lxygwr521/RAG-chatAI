@@ -6,7 +6,7 @@ from app.services.rag_service import augment_chat
 
 # Chunks with score below this threshold are considered "high confidence"
 # ChromaDB cosine distance: 0 = identical, 2 = opposite. < 0.8 = good match.
-HIGH_CONFIDENCE_THRESHOLD = 0.8
+HIGH_CONFIDENCE_THRESHOLD = 0.6
 
 
 @tool

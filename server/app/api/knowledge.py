@@ -108,10 +108,23 @@ async def list_documents(db: AsyncSession = Depends(get_db)):
 @router.delete("/documents/{doc_id}")
 async def remove_document(doc_id: str, db: AsyncSession = Depends(get_db)):
     """Delete a document: removes file, chunks, and ChromaDB vectors."""
-    doc = await db.get(KnowledgeDocument, doc_id)
+    from sqlalchemy.orm import selectinload
+
+    result = await db.execute(
+        select(KnowledgeDocument)
+        .where(KnowledgeDocument.id == doc_id)
+        .options(selectinload(KnowledgeDocument.chunks))
+    )
+    doc = result.scalar_one_or_none()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    # Delete ChromaDB vectors + file on disk
     await delete_document(doc_id, doc)
+
+    # Delete SQLite records (chunks cascade via relationship)
+    for chunk in doc.chunks:
+        await db.delete(chunk)
     await db.delete(doc)
+
     return {"detail": "Deleted"}
