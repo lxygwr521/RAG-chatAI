@@ -71,6 +71,17 @@ server/
       agent_service.py          # AgentService: LangGraph create_agent + SummarizationMiddleware
     tools/
       search_knowledge.py       # RAG 检索封装为 LangChain @tool
+    evaluation/
+      core/
+        config.py                 # EvalConfig 数据类（阈值、judge 模型等）
+        runner.py                 # EvaluationRunner 核心编排（prepare → evaluate → report）
+        api.py                    # FastAPI 端点 /api/eval/*
+        report.py                 # 报告生成（Markdown + JSON + rich 终端输出）
+      dataset/
+        test_cases.py           # 10 条手工测试用例（5 个类别）
+      metrics/
+        __init__.py             # RAGAS 指标封装（Faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall）
+      reports/                  # gitignored — 评估报告输出（eval_YYYYMMDD_HHMMSS.json/.md）
     rag/
       loader.py                 # 文档加载 (txt/md/pdf/csv/json 等)
       splitter.py               # 中文分块 (500 字符, 10% 重叠)
@@ -81,6 +92,7 @@ server/
     chat.db                     # SQLite
     chroma/                     # ChromaDB 向量持久化
     uploads/                    # 上传文档原始文件
+  evaluation/reports/           # gitignored — RAGAS 评估报告 (.json + .md)
 ```
 
 ### 数据流（完整）
@@ -147,6 +159,18 @@ ZhipuAI embedding-2 (ZHIPUAI_API_KEY) → OpenAI text-embedding-3-small → ONNX
 | ChromaDB | 向量 + 原文副本 + metadata (相似度检索) |
 | data/uploads/ | 上传原始文件 |
 | Pinia (内存) | 前端工作缓存, 启动时从后端加载 |
+| evaluation/reports/ | RAGAS 评估报告 (.json + .md)，gitignored |
+
+### RAGAS 评估体系
+
+基于 RAGAS 0.4.x 的 RAG 质量评估框架，支持自动化评估、回归检测、CI 集成。
+
+- **指标**: Faithfulness (≥0.80), AnswerRelevancy (≥0.70), ContextPrecision (≥0.70), ContextRecall (≥0.70)
+- **Judge 模型**: `deepseek-chat` (temperature=0, 确定性评估)
+- **测试用例**: 10 条手工用例，覆盖 factual / reasoning / edge_case / multi_doc / safety 五类
+- **报告**: `evaluation/reports/eval_YYYYMMDD_HHMMSS.json` + `.md`（每次 run 生成一对）
+- **基线**: `baseline.json` — 用于回归对比，阈值 5% 退化告警
+- **API**: `/api/eval/run`, `/api/eval/report/latest`, `/api/eval/baseline` 等
 
 ## 前端约束
 
@@ -159,7 +183,7 @@ ZhipuAI embedding-2 (ZHIPUAI_API_KEY) → OpenAI text-embedding-3-small → ONNX
 
 **前端**: Vue 3, Pinia, Naive UI, Tailwind CSS 4, SCSS, markdown-it + highlight.js + katex
 
-**后端**: FastAPI, uvicorn, SQLAlchemy async + aiOSQLite, sse-starlette, chromadb, langchain (agents + middleware), langchain-openai, langchain-core, langchain-text-splitters, langchain-classic (SummarizerMixin), openai (调 ZhipuAI/OpenAI), pypdf, pydantic-settings
+**后端**: FastAPI, uvicorn, SQLAlchemy async + aiOSQLite, sse-starlette, chromadb, langchain (agents + middleware), langchain-openai, langchain-core, langchain-text-splitters, langchain-classic (SummarizerMixin), openai (调 ZhipuAI/OpenAI), pypdf, pydantic-settings, ragas (RAGAS 评估)
 
 ## 运行时环境
 

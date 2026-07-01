@@ -60,6 +60,7 @@ async def _chat_event_generator(
         existing.title = user_content[:20] + ("..." if len(user_content) > 20 else "")
 
     db.add(user_msg)
+    await db.commit()  # 显式提交用户消息，EventSourceResponse 不会触发 get_db 的自动 commit
 # 2. 构建 LLM 消息列表（上下文压缩由 AgentService 的 SummarizationMiddleware 自动处理）
     # SummarizationMiddleware 在 token > 60K 或消息 > 80 条时自动将旧消息压缩为摘要
     llm_messages = [m for m in request.messages]
@@ -111,6 +112,7 @@ async def _chat_event_generator(
 
         # Update conversation timestamp
         existing.updated_at = int(time.time() * 1000)
+        await db.commit()  # 显式提交助手消息和会话时间戳
 
     finally:
         # Persist partial content on abort (only if not already persisted above)
@@ -121,6 +123,7 @@ async def _chat_event_generator(
                 full_thinking if full_thinking else None,
             )
             db.add(assistant_msg)
+            await db.commit()  # 显式提交部分内容
 
 
 @router.post("/chat")

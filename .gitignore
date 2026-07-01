@@ -44,6 +44,8 @@ __pycache__/
 
 # Runtime data
 server/data/
+server/evaluation/reports/
+plan/
 
 # SQLite
 *.db-shm
