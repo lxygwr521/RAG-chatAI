@@ -96,9 +96,22 @@ uvicorn app.main:app --port 3001 --reload
 # 终端 2: 启动前端 (port 3000)
 cd frontend
 pnpm dev
+浏览器打开 `http://localhost:3000`。
 ```
 
-浏览器打开 `http://localhost:3000`。
+### 4.评估
+
+```bash
+# 1. 准备（跑 RAG 管道填充答案 + 上下文）
+curl -X POST http://localhost:3001/api/eval/prepare
+
+# 2. 评估
+curl -X POST http://localhost:3001/api/eval/run
+
+# 3. 看报告
+curl http://localhost:3001/api/eval/report/latest
+```
+
 
 ## 使用指南
 

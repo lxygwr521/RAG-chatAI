@@ -1,0 +1,104 @@
+{
+  "id": "eval_20260701_091515",
+  "timestamp": "2026-07-01T09:15:15.952839+00:00",
+  "elapsed_seconds": 90.42,
+  "case_count": 11,
+  "pass_count": 0,
+  "fail_count": 0,
+  "summary": {
+    "faithfulness": {
+      "mean": 0.081,
+      "min": 0.0,
+      "max": 0.3247
+    },
+    "answer_relevancy": {
+      "mean": 0.4537,
+      "min": 0.0,
+      "max": 0.704
+    },
+    "context_precision": {
+      "mean": 0.1364,
+      "min": 0.0,
+      "max": 1.0
+    },
+    "context_recall": {
+      "mean": 0.1667,
+      "min": 0.0,
+      "max": 1.0
+    }
+  },
+  "scores": [
+    {
+      "faithfulness": 0.3247,
+      "answer_relevancy": 0.5044,
+      "context_precision": 0.0,
+      "context_recall": 0.0
+    },
+    {
+      "faithfulness": 0.0714,
+      "answer_relevancy": 0.4545,
+      "context_precision": 0.5,
+      "context_recall": 1.0
+    },
+    {
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.5647,
+      "context_precision": 0.0,
+      "context_recall": NaN
+    },
+    {
+      "faithfulness": NaN,
+      "answer_relevancy": 0.5785,
+      "context_precision": 1.0,
+      "context_recall": 0.0
+    },
+    {
+      "faithfulness": NaN,
+      "answer_relevancy": 0.4937,
+      "context_precision": 0.0,
+      "context_recall": NaN
+    },
+    {
+      "faithfulness": 0.1111,
+      "answer_relevancy": 0.0,
+      "context_precision": 0.0,
+      "context_recall": NaN
+    },
+    {
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.37,
+      "context_precision": 0.0,
+      "context_recall": 0.0
+    },
+    {
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.0,
+      "context_precision": 0.0,
+      "context_recall": NaN
+    },
+    {
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.704,
+      "context_precision": 0.0,
+      "context_recall": 0.0
+    },
+    {
+      "faithfulness": 0.1944,
+      "answer_relevancy": 0.703,
+      "context_precision": 0.0,
+      "context_recall": NaN
+    },
+    {
+      "faithfulness": 0.0278,
+      "answer_relevancy": 0.6181,
+      "context_precision": 0.0,
+      "context_recall": 0.0
+    }
+  ],
+  "warnings": [
+    "faithfulness: 0.081 < 0.800 (threshold)",
+    "answer_relevancy: 0.454 < 0.700 (threshold)",
+    "context_precision: 0.136 < 0.700 (threshold)",
+    "context_recall: 0.167 < 0.700 (threshold)"
+  ]
+}

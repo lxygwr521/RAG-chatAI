@@ -24,6 +24,7 @@ from app.core.database import init_db
 from app.api.chat import router as chat_router
 from app.api.conversations import router as conversations_router
 from app.api.knowledge import router as knowledge_router
+from evaluation.api import eval_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -111,6 +112,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(chat_router)
 app.include_router(conversations_router)
 app.include_router(knowledge_router)
+app.include_router(eval_router)
 
 
 @app.get("/api/health")

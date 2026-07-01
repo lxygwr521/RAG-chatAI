@@ -174,3 +174,4 @@ ZhipuAI embedding-2 (ZHIPUAI_API_KEY) → OpenAI text-embedding-3-small → ONNX
 - `.d.ts` 仅用于全局声明、第三方类型补充、环境变量声明。
 - Vue props 必须显式类型化。
 - **不要删除任何注释。**
+
