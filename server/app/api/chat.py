@@ -19,6 +19,18 @@ from app.services.llm_service import (
     persist_user_message,
     persist_assistant_message,
 )
+from app.services.conversation_context_service import (
+    build_conversation_context,
+    update_rolling_summary,
+)
+from app.services.memory_service import (
+    extract_episodic_memory,
+    retrieve_relevant_memories,
+    format_memory_context,
+    get_user_profile,
+    extract_and_update_profile,
+    format_profile_context,
+)
 
 router = APIRouter(prefix="/api")
 
@@ -61,9 +73,26 @@ async def _chat_event_generator(
 
     db.add(user_msg)
     await db.commit()  # 显式提交用户消息，EventSourceResponse 不会触发 get_db 的自动 commit
-# 2. 构建 LLM 消息列表（上下文压缩由 AgentService 的 SummarizationMiddleware 自动处理）
-    # SummarizationMiddleware 在 token > 60K 或消息 > 80 条时自动将旧消息压缩为摘要
-    llm_messages = [m for m in request.messages]
+# 2. 从后端 SQLite 构建 LLM 消息列表（摘要 + 未摘要消息）
+    context = await build_conversation_context(db, existing)
+    llm_messages = context.messages
+
+    # Load persisted rolling summary for context continuity.
+    summary_context = context.summary_context
+
+    # Retrieve relevant cross-conversation episodic memories for the current turn.
+    memory_context = None
+    if user_content:
+        relevant = await retrieve_relevant_memories(
+            user_content,
+            exclude_conversation_id=conv_id,
+        )
+        if relevant:
+            memory_context = format_memory_context(relevant)
+
+    # Load user profile for long-term context (Phase 3)
+    profile = await get_user_profile(db)
+    profile_context = format_profile_context(profile) if profile else None
 
     # Run via AgentService — Agent decides if/when to call tools (RAG, etc.)
     rag_citations = None
@@ -73,7 +102,12 @@ async def _chat_event_generator(
 # 3.1调用Agent服务流式生成
     try:
         # llm_messages（包含系统提示词、历史总结、RAG上下文和当前问题）
-        async for event in agent_service.run(llm_messages, request.model, abort_event):
+        async for event in agent_service.run(
+            llm_messages, request.model, abort_event,
+            summary_context=summary_context,
+            memory_context=memory_context,
+            profile_context=profile_context,
+        ):
             if abort_event.is_set():
                 break
 
@@ -108,11 +142,34 @@ async def _chat_event_generator(
                 citations_json=citations_json,
             )
             db.add(assistant_msg)
+            await db.flush()
             assistant_persisted = True
 
         # Update conversation timestamp
         existing.updated_at = int(time.time() * 1000)
         await db.commit()  # 显式提交助手消息和会话时间戳
+
+        # Update persisted rolling summary after the assistant message is saved.
+        asyncio.create_task(update_rolling_summary(conv_id))
+
+        # Async post-processing: episodic memory + user profile (Phase 2 & 3)
+        asyncio.create_task(
+            extract_episodic_memory(
+                llm_messages,
+                conv_id,
+                full_content,
+                source_message_start_id=user_msg.id,
+                source_message_end_id=assistant_msg.id if full_content else None,
+            )
+        )
+        asyncio.create_task(
+            extract_and_update_profile(
+                llm_messages,
+                full_content,
+                conversation_id=conv_id,
+                source_message_id=user_msg.id,
+            )
+        )
 
     finally:
         # Persist partial content on abort (only if not already persisted above)
@@ -124,6 +181,7 @@ async def _chat_event_generator(
             )
             db.add(assistant_msg)
             await db.commit()  # 显式提交部分内容
+            asyncio.create_task(update_rolling_summary(conv_id))
 
 
 @router.post("/chat")

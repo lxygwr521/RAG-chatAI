@@ -3,12 +3,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.models.conversation import Conversation as ConversationModel, Message as MessageModel
 from app.schemas.chat import ConversationCreate, ConversationOut, MessageOut
+from app.services.memory_service import delete_episodic_memories_for_conversation
 
 router = APIRouter(prefix="/api")
 
@@ -70,6 +71,7 @@ async def delete_conversation(conv_id: str, db: AsyncSession = Depends(get_db)):
     conv = await db.get(ConversationModel, conv_id)
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
+    await delete_episodic_memories_for_conversation(conv_id)
     await db.delete(conv)
     return {"detail": "Deleted"}
 

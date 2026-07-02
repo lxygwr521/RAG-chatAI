@@ -130,6 +130,14 @@ def get_collection() -> chromadb.Collection:
     return _collection
 
 
+def get_chroma_client() -> chromadb.PersistentClient:
+    """Get the shared ChromaDB persistent client (auto-initializes if needed)."""
+    global _chroma_client
+    if _chroma_client is None:
+        init_chroma()
+    return _chroma_client
+
+
 # ---------------------------------------------------------------------------
 # Document ingestion
 # ---------------------------------------------------------------------------

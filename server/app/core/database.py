@@ -44,17 +44,45 @@ async def get_db() -> AsyncSession:
 # Performance indexes (CREATE IF NOT EXISTS — idempotent)
 _INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_messages_conv_id ON messages(conversation_id)",
+    "CREATE INDEX IF NOT EXISTS idx_messages_conv_id_id ON messages(conversation_id, id)",
     "CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_messages_role ON messages(role)",
     "CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at)",
     "CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON knowledge_chunks(document_id)",
     "CREATE INDEX IF NOT EXISTS idx_documents_created ON knowledge_documents(created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_user_memory_status ON user_memory_facts(status)",
+    "CREATE INDEX IF NOT EXISTS idx_user_memory_category ON user_memory_facts(category)",
+    "CREATE INDEX IF NOT EXISTS idx_user_memory_source_conv ON user_memory_facts(source_conversation_id)",
+    "CREATE INDEX IF NOT EXISTS idx_episodic_conv_id ON episodic_memories(conversation_id)",
+    "CREATE INDEX IF NOT EXISTS idx_episodic_created ON episodic_memories(created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_episodic_embedding ON episodic_memories(embedding_id)",
 ]
+
+
+async def _ensure_conversation_columns(conn) -> None:
+    """Add columns that create_all cannot add to an existing SQLite table."""
+    result = await conn.execute(text("PRAGMA table_info(conversations)"))
+    existing_columns = {row[1] for row in result.fetchall()}
+
+    if "summarized_through_message_id" not in existing_columns:
+        await conn.execute(
+            text("ALTER TABLE conversations ADD COLUMN summarized_through_message_id INTEGER")
+        )
+    if "summary_updated_at" not in existing_columns:
+        await conn.execute(
+            text("ALTER TABLE conversations ADD COLUMN summary_updated_at INTEGER")
+        )
 
 
 async def init_db():
     """Create all tables + indexes. Called during application startup."""
+    # Ensure all ORM models are registered before create_all().
+    import app.models.conversation  # noqa: F401
+    import app.models.knowledge  # noqa: F401
+    import app.models.memory  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await _ensure_conversation_columns(conn)
         for idx_sql in _INDEXES:
             await conn.execute(text(idx_sql))

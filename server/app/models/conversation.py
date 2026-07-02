@@ -15,6 +15,8 @@ class Conversation(Base):
     updated_at: Mapped[int] = mapped_column(Integer, default=lambda: int(time.time() * 1000))
     summary_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     summarized_count: Mapped[int] = mapped_column(Integer, default=0)
+    summarized_through_message_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    summary_updated_at: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     messages: Mapped[list["Message"]] = relationship(
         "Message", back_populates="conversation", cascade="all, delete-orphan"

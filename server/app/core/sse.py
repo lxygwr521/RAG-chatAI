@@ -70,8 +70,13 @@ def tool_result_event(tool_call_id: str, tool_name: str, result: str, success: b
     )
 
 
-def done_event() -> SSEEvent:
-    """Stream completed."""
+def done_event(summary_text: str | None = None, summarized_count: int = 0) -> SSEEvent:
+    """Stream completed. Optionally carries summary metadata for persistence."""
+    if summary_text:
+        return SSEEvent(
+            event="done",
+            data={"done": True, "summary_text": summary_text, "summarized_count": summarized_count},
+        )
     return SSEEvent(event="done", data="[DONE]")
 
 
