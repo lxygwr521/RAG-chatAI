@@ -64,12 +64,15 @@ async def build_conversation_context(
     message_count = count_result.scalar() or 0
 
     return ConversationContext(
+        #尚未摘要压缩的信息
         messages=[
             {"role": m.role, "content": m.content}
             for m in messages
             if m.role and m.content
         ],
+        #摘要信息
         summary_context=conversation.summary_text,
+        # 总消息数量
         message_count=message_count,
     )
 

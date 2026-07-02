@@ -46,6 +46,7 @@ __pycache__/
 server/data/
 server/evaluation/reports/
 plan/
+resume/
 
 # SQLite
 *.db-shm

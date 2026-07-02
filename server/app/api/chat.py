@@ -75,7 +75,7 @@ async def _chat_event_generator(
     await db.commit()  # 显式提交用户消息，EventSourceResponse 不会触发 get_db 的自动 commit
 # 2. 从后端 SQLite 构建 LLM 消息列表（摘要 + 未摘要消息）
     context = await build_conversation_context(db, existing)
-    llm_messages = context.messages
+    llm_messages = context.messages 
 
     # Load persisted rolling summary for context continuity.
     summary_context = context.summary_context
@@ -101,7 +101,7 @@ async def _chat_event_generator(
     assistant_persisted = False  # Track whether we already persisted the message
 # 3.1调用Agent服务流式生成
     try:
-        # llm_messages（包含历史消息，摘要）
+        # llm_messages（包含历史消息,未被压缩的信息）
         async for event in agent_service.run(
             llm_messages, request.model, abort_event,
             summary_context=summary_context,
