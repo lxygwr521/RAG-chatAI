@@ -39,6 +39,17 @@ class Settings(BaseSettings):
     max_context_tokens: int = 80000
     recent_window_size: int = 20
 
+    # RAG retrieval
+    rag_vector_top_k: int = 30
+    rag_lexical_top_k: int = 30
+    rag_score_threshold: float = 1.5
+    rag_rrf_k: int = 60
+    rag_vector_weight: float = 1.0
+    rag_lexical_weight: float = 0.8
+    rag_rerank_top_k: int = 12
+    rag_reranker_model: str = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+    rag_reranker_batch_size: int = 16
+
     # Mock
     mock_chunk_size: int = 100
     mock_interval_ms: int = 50

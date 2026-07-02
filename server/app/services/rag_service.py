@@ -306,9 +306,12 @@ async def augment_chat(
     # 2. 检索 (using HyDE-generated query for embedding)
     chunks = await retrieve_context(
         query=retrieval_query,
+        original_query=user_content,
         collection=collection,
         embedder=embedder,
         top_k=top_k,
+        score_threshold=settings.rag_score_threshold,
+        rerank_top_k=settings.rag_rerank_top_k,
     )
 # 2.检索与空结果处理
     if not chunks:

@@ -101,7 +101,7 @@ async def _chat_event_generator(
     assistant_persisted = False  # Track whether we already persisted the message
 # 3.1调用Agent服务流式生成
     try:
-        # llm_messages（包含系统提示词、历史总结、RAG上下文和当前问题）
+        # llm_messages（包含历史消息，摘要）
         async for event in agent_service.run(
             llm_messages, request.model, abort_event,
             summary_context=summary_context,
