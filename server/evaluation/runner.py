@@ -124,6 +124,59 @@ class EvaluationRunner:
             metric_names=self.metric_names,
         )
 
+    async def generate_testset(
+        self,
+        testset_size: int | None = None,
+        force: bool = False,
+    ) -> dict:
+        """Generate a synthetic testset from the knowledge base via RAGAS TestsetGenerator.
+
+        Args:
+            testset_size: Number of test cases to generate. None -> config default.
+            force: If True, regenerate even if a cached testset exists.
+
+        Returns:
+            Dict with status, count, and cache path.
+        """
+        from evaluation.config import config
+        from evaluation.dataset.generator import generate_testset, save_testset, load_testset
+
+        # Check existing cache unless force=True
+        if not force:
+            existing = load_testset()
+            if existing:
+                logger.info(
+                    "Cached testset already exists (%d cases). Use force=True to regenerate.",
+                    len(existing),
+                )
+                return {
+                    "status": "already_exists",
+                    "count": len(existing),
+                    "message": (
+                        f"Cached testset with {len(existing)} cases already exists. "
+                        "POST with force=True to regenerate."
+                    ),
+                }
+
+        size = testset_size or config.testset_size
+        logger.info("Generating testset with %d cases from knowledge base...", size)
+
+        try:
+            test_cases = await generate_testset(
+                testset_size=size,
+                generator_model=config.generator_model,
+            )
+        except Exception as e:
+            logger.exception("Testset generation failed")
+            return {"status": "error", "message": str(e), "count": 0}
+
+        cache_path = save_testset(test_cases)
+        return {
+            "status": "completed",
+            "count": len(test_cases),
+            "cache_path": cache_path,
+        }
+
     async def prepare_test_cases(
         self,
         questions: list[dict] | None = None,
@@ -137,7 +190,7 @@ class EvaluationRunner:
 
         Args:
             questions: List of test case dicts with at least "question" key.
-                       None -> load defaults.
+                       None -> load from auto-generated cache.
 
         Returns:
             List of test cases with question, answer, contexts populated.
@@ -147,6 +200,13 @@ class EvaluationRunner:
 
         if questions is None:
             questions = load_test_cases()
+
+        if not questions:
+            logger.error(
+                "No test cases to prepare. "
+                "POST to /api/eval/generate first to create a testset from the knowledge base."
+            )
+            return []
 
         filled = []
         skipped = []

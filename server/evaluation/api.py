@@ -24,6 +24,12 @@ class EvalRunRequest(BaseModel):
     dataset: str = Field("default", description="Dataset name: default | custom")
 
 
+class GenerateRequest(BaseModel):
+    """Request to generate a synthetic testset from the knowledge base."""
+    testset_size: int | None = Field(None, ge=5, le=200, description="Number of test cases. None = config default.")
+    force: bool = Field(False, description="Regenerate even if cache exists.")
+
+
 class RetrievalEvalRequest(BaseModel):
     """Request to run retrieval-only evaluation."""
     modes: list[str] | None = Field(None, description="Modes to compare. None = all.")
@@ -46,16 +52,43 @@ class BaselineResponse(BaseModel):
 
 # ── Endpoints ────────────────────────────────────────────────────
 
+@eval_router.post("/generate")
+async def generate_testset(request: GenerateRequest | None = None):
+    """Generate a synthetic evaluation testset from the knowledge base.
+
+    Uses RAGAS TestsetGenerator to create (question, ground_truth, reference_contexts)
+    triples from ChromaDB documents. Results are cached to disk for subsequent
+    /eval/prepare and /eval/run calls.
+
+    This requires knowledge base documents to be uploaded first.
+    Generation may take several minutes depending on testset_size.
+    """
+    body = request or GenerateRequest()
+    result = await runner.generate_testset(
+        testset_size=body.testset_size,
+        force=body.force,
+    )
+    return result
+
+
 @eval_router.post("/prepare")
 async def prepare_test_cases():
-    """Run the RAG pipeline on all test questions to fill answers + contexts.
+    """Run the RAG + Agent pipeline on all test questions to fill answers + contexts.
 
-    Call this before /eval/run -- it generates the actual answers and
-    retrieves contexts that will then be measured by RAGAS metrics.
+    Call /eval/generate first to create the testset from the knowledge base,
+    then call this endpoint to run the actual RAG retrieval and Agent answer
+    generation on each question. The filled results are held in memory for
+    a subsequent /eval/run call.
     """
     from evaluation.runner import runner as eval_runner
 
     questions = load_test_cases()
+    if not questions:
+        raise HTTPException(
+            status_code=400,
+            detail="No test cases available. POST to /api/eval/generate first.",
+        )
+
     filled = await eval_runner.prepare_test_cases(questions)
 
     # Store in memory for the next /eval/run call
@@ -202,16 +235,18 @@ async def list_metrics():
 
 @eval_router.get("/test-cases")
 async def get_test_cases():
-    """List available test cases (without answers -- questions only)."""
+    """List available test cases (questions and ground_truth, no answers yet)."""
     cases = load_test_cases()
     return {
         "count": len(cases),
+        "source": "auto_generated",
         "cases": [
             {
                 "index": i,
                 "question": tc["question"],
-                "category": tc.get("category", "unknown"),
-                "difficulty": tc.get("difficulty", "unknown"),
+                "category": tc.get("category", "generated"),
+                "difficulty": tc.get("difficulty", "auto"),
+                "has_ground_truth": bool(tc.get("ground_truth")),
             }
             for i, tc in enumerate(cases)
         ],

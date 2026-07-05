@@ -21,9 +21,11 @@ class EvalConfig:
     # Regression detection
     regression_threshold: float = 0.05  # 5% drop triggers warning
 
-    # Dataset
-    manual_dataset_path: str = "evaluation/dataset/test_cases.py"
-    auto_dataset_size: int = 50  # number of auto-generated test cases
+    # Testset auto-generation (RAGAS TestsetGenerator)
+    testset_cache_path: str = "evaluation/dataset/auto_test_cases.json"
+    testset_size: int = 30  # number of synthetic test cases to generate
+    generator_model: str = "deepseek-chat"  # LLM for question/answer generation
+    generator_temperature: float = 0.3  # slight creativity for diverse questions
 
     # Report output
     report_dir: str = "evaluation/reports"

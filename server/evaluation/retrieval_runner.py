@@ -14,9 +14,7 @@ from app.services.rag_service import _generate_hypothetical_doc, get_collection
 from app.rag.embedder import get_embedder
 from evaluation.config import config
 from evaluation.dataset.retrieval_cases import load_retrieval_cases
-
 RETRIEVAL_MODES = ["vector_only", "hybrid_rrf", "hybrid_rerank"]
-
 
 @dataclass
 class RetrievalCaseScore:
