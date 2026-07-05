@@ -180,7 +180,7 @@ class EvaluationRunner:
         """
         from app.services.rag_service import augment_chat
         from app.services.agent_service import agent_service
-
+        
         if questions is None:
             questions = load_test_cases()
 
@@ -205,6 +205,7 @@ class EvaluationRunner:
                     history=[],
                     user_content=question,
                 )
+               #检索到的上下文
                 contexts = [c["snippet"] for c in rag_result.citations] if rag_result.citations else []
 
                 # Step 2: Generate answer via agent

@@ -125,9 +125,9 @@ async def run_evaluation(request: EvalRunRequest | None = None):
 
     test_cases = list(_prepared_cases)
 
-    # Filter to test cases that have answers and contexts
-    ready = [tc for tc in test_cases if tc.get("answer") and tc.get("contexts")]
-    if not ready:
+    result = await eval_runner.run_batch(test_cases, persist=True)
+
+    if not result.id:
         return {
             "status": "no_data",
             "message": (
@@ -138,8 +138,6 @@ async def run_evaluation(request: EvalRunRequest | None = None):
             "ready_count": 0,
         }
 
-    result = await eval_runner.run_batch(ready, persist=True)
-
     return {
         "status": "completed",
         "id": result.id,
@@ -149,7 +147,6 @@ async def run_evaluation(request: EvalRunRequest | None = None):
         "fail_count": result.fail_count,
         "warnings": result.warnings,
     }
-
 
 @eval_router.get("/report/latest")
 async def get_latest_report():

@@ -23,7 +23,7 @@ from app.rag.loader import load_document
 from app.rag.splitter import split_documents
 from app.rag.embedder import get_embedder, ChromaEmbeddingFunction
 from app.rag.retriever import retrieve_context, RetrievedChunk
-from app.rag.prompt import build_rag_messages, build_citations
+from app.rag.prompt import build_citations
 
 logger = logging.getLogger(__name__)
 
@@ -268,7 +268,6 @@ async def delete_document(doc_id: str, doc: KnowledgeDocument) -> None:
 class RAGResult:
     """Result of RAG retrieval + augmentation."""
 
-    messages: list[dict]
     citations: list[dict]
     chunks_used: int
 
@@ -277,9 +276,9 @@ async def augment_chat(
     system_prompt: str,
     history: list[dict],
     user_content: str,
-    top_k: int = 5,
+    top_k: int = 3,
 ) -> RAGResult:
-    """Retrieve relevant chunks and augment the chat messages.
+    """Retrieve relevant chunks and return citation data.
 
     Args:
         system_prompt: Original system prompt.
@@ -288,16 +287,13 @@ async def augment_chat(
         top_k: Number of chunks to retrieve.
 
     Returns:
-        RAGResult with augmented messages and citation data.
+        RAGResult with citation data for the caller to format.
     """
     collection = get_collection()
     embedder = get_embedder()
 	# 1. 空知识库处理
     if collection.count() == 0:
-        messages: list[dict] = [{"role": "system", "content": system_prompt}]
-        messages.extend(history)
-        messages.append({"role": "user", "content": user_content})
-        return RAGResult(messages=messages, citations=[], chunks_used=0)
+        return RAGResult(citations=[], chunks_used=0)
 
     # 1.5 HyDE query rewriting — generate hypothetical doc for better retrieval
     retrieval_query = await _generate_hypothetical_doc(user_content)
@@ -314,22 +310,11 @@ async def augment_chat(
     )
 # 2.检索与空结果处理
     if not chunks:
-        messages = [{"role": "system", "content": system_prompt}]
-        messages.extend(history)
-        messages.append({"role": "user", "content": user_content})
-        return RAGResult(messages=messages, citations=[], chunks_used=0)
+        return RAGResult(citations=[], chunks_used=0)
 # 3.构建增强后的消息
-    # Build augmented messages
-    messages = build_rag_messages(
-        system_prompt=system_prompt,
-        history=history,
-        user_content=user_content,
-        retrieved_chunks=chunks,
-    )
     citations = build_citations(chunks)
 
     return RAGResult(
-        messages=messages,
         citations=citations,
         chunks_used=len(chunks),
     )
