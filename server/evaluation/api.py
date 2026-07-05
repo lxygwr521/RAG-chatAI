@@ -21,7 +21,6 @@ eval_router = APIRouter(prefix="/api/eval", tags=["evaluation"])
 class EvalRunRequest(BaseModel):
     """Request to run an evaluation."""
     metric_names: list[str] | None = Field(None, description="Metrics to compute. None = all.")
-    dataset: str = Field("default", description="Dataset name: default | custom")
 
 
 class GenerateRequest(BaseModel):

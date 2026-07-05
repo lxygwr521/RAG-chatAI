@@ -16,7 +16,6 @@ class EvalConfig:
     answer_relevancy_min: float = 0.70
     context_precision_min: float = 0.70
     context_recall_min: float = 0.70
-    context_relevancy_min: float = 0.60
 
     # Regression detection
     regression_threshold: float = 0.05  # 5% drop triggers warning

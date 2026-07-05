@@ -31,7 +31,6 @@ def generate_report(result: "EvalResult", config: "EvalConfig") -> str:
             "answer_relevancy": config.answer_relevancy_min,
             "context_precision": config.context_precision_min,
             "context_recall": config.context_recall_min,
-            "context_relevancy": config.context_relevancy_min,
         }
         for metric, stats in result.metric_summary.items():
             target = thresholds.get(metric, 0.7)
@@ -121,7 +120,6 @@ def print_rich_report(result: "EvalResult", config: "EvalConfig") -> None:
         "answer_relevancy": config.answer_relevancy_min,
         "context_precision": config.context_precision_min,
         "context_recall": config.context_recall_min,
-        "context_relevancy": config.context_relevancy_min,
     }
 
     for metric, stats in result.metric_summary.items():

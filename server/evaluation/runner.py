@@ -9,14 +9,13 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from app.config import settings
 from evaluation.config import config
 from evaluation.dataset.test_cases import load_test_cases
-from evaluation.metrics import evaluate_single, evaluate_batch, METRICS
+from evaluation.metrics import evaluate_batch
 from evaluation.report import generate_report
 
 logger = logging.getLogger(__name__)
@@ -42,9 +41,11 @@ class EvaluationRunner:
     Usage::
 
         runner = EvaluationRunner()
-        # Single evaluation
-        result = await runner.evaluate_one(question, answer, contexts)
-        # Batch against test cases
+        # Generate testset from knowledge base
+        result = await runner.generate_testset(testset_size=30)
+        # Prepare test cases with RAG + Agent answers
+        filled = await runner.prepare_test_cases()
+        # Batch evaluate
         report = await runner.run_batch()
         # Regression check
         regression = await runner.check_regression()
@@ -105,24 +106,6 @@ class EvaluationRunner:
                 model=settings.zhipuai_embedding_model,
             )
         return self._embeddings
-
-    async def evaluate_one(
-        self,
-        question: str,
-        answer: str,
-        contexts: list[str],
-        ground_truth: str | None = None,
-    ) -> dict:
-        """Evaluate a single question-answer pair."""
-        return await evaluate_single(
-            question=question,
-            answer=answer,
-            contexts=contexts,
-            ground_truth=ground_truth,
-            llm=self.judge_llm,
-            embeddings=self.embeddings,
-            metric_names=self.metric_names,
-        )
 
     async def generate_testset(
         self,
@@ -409,7 +392,6 @@ class EvaluationRunner:
             "answer_relevancy": config.answer_relevancy_min,
             "context_precision": config.context_precision_min,
             "context_recall": config.context_recall_min,
-            "context_relevancy": config.context_relevancy_min,
         }
         for metric, threshold in thresholds.items():
             if metric in summary:
@@ -421,12 +403,12 @@ class EvaluationRunner:
         return warnings
 
     def _count_pass_fail(self, scores: list[dict]) -> tuple[int, int]:
-        if not scores or not self.metric_names:
+        if not scores:
             return 0, 0
 
-        # Use primary metric (first in list) for pass/fail
-        primary = self.metric_names[0] if self.metric_names else "faithfulness"
-        threshold = getattr(config, f"{primary}_min", 0.7)
+        # Use faithfulness as primary metric for pass/fail
+        primary = "faithfulness"
+        threshold = config.faithfulness_min
 
         passes = sum(1 for s in scores if s.get(primary, 0) >= threshold)
         fails = len(scores) - passes
