@@ -117,19 +117,21 @@ async def run_evaluation(request: EvalRunRequest | None = None):
     eval_runner = type(runner).__new__(type(runner))
     eval_runner.__init__(metric_names=metric_names)
 
-    # Use prepared cases if available, otherwise fall back to raw test cases
-    if _prepared_cases:
-        test_cases = list(_prepared_cases)
-    else:
-        test_cases = load_test_cases()
+    if not _prepared_cases:
+        raise HTTPException(
+            status_code=400,
+            detail="No prepared test cases. POST to /api/eval/prepare first.",
+        )
 
-    # Check if test cases have answers
+    test_cases = list(_prepared_cases)
+
+    # Filter to test cases that have answers and contexts
     ready = [tc for tc in test_cases if tc.get("answer") and tc.get("contexts")]
     if not ready:
         return {
             "status": "no_data",
             "message": (
-                "No test cases have answers/contexts yet. "
+                "No test cases have answers/contexts. "
                 "POST to /api/eval/prepare first to run the RAG pipeline on test questions."
             ),
             "test_case_count": len(test_cases),

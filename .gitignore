@@ -47,6 +47,7 @@ server/data/
 server/evaluation/reports/
 plan/
 resume/
+framework/
 
 # SQLite
 *.db-shm
