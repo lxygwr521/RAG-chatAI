@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     port: int = 3001
     cors_origins: str = "http://localhost:3000"
 
+    # Agent
+    agent_recursion_limit: int = 10
+
     # Context
     max_context_tokens: int = 80000
     recent_window_size: int = 20

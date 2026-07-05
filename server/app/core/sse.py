@@ -85,23 +85,4 @@ def error_event(message: str) -> SSEEvent:
     return SSEEvent(event="error", data={"error": message})
 
 
-# ---------------------------------------------------------------------------
-# EventSourceResponse wrapper
-# ---------------------------------------------------------------------------
 
-async def sse_stream(generator: AsyncGenerator[SSEEvent | str, None]) -> EventSourceResponse:
-    """Wrap an async generator of SSEEvent into an EventSourceResponse.
-
-    Supports both SSEEvent objects (with typed events) and plain strings
-    (backward compat — treated as raw data without event type).
-    """
-    async def _wrap():
-        async for item in generator:
-            if isinstance(item, SSEEvent):
-                yield item.to_dict()
-            elif isinstance(item, dict):
-                yield item
-            else:
-                yield {"data": str(item)}
-
-    return EventSourceResponse(_wrap())

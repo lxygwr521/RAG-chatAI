@@ -47,7 +47,6 @@ HYDE_PROMPT = """你是一个个人健康档案撰写助手。根据用户的健
 # Lazy-initialized HyDE LLM (lightweight model for fast generation)
 _hyde_llm: Optional[ChatOpenAI] = None
 
-
 def _get_hyde_llm() -> ChatOpenAI:
     """Get or create the HyDE generation LLM (lazy init, singleton)."""
     global _hyde_llm

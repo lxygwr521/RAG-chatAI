@@ -197,7 +197,7 @@ async def chat(
     """
     abort_event = asyncio.Event()
 
-    async def event_generator():
+    async def event_generator():# 序列化为 HTTP 格式
         async for sse_event in _chat_event_generator(request, db, abort_event):
             if await http_request.is_disconnected():
                 abort_event.set()

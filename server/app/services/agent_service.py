@@ -148,6 +148,7 @@ class AgentService:
             async for chunk in self._agent.astream(
                 {"messages": input_messages},
                 stream_mode="messages",
+                config={"recursion_limit": settings.agent_recursion_limit},
             ):
                 if abort_event and abort_event.is_set():
                     break

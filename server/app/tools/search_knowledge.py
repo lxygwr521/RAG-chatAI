@@ -23,17 +23,25 @@ async def search_knowledge(query: str) -> str:
     )
 
     if not result.chunks_used:
-        return "【知识库无结果】知识库中未找到与查询相关的文档。请基于你的通用知识直接回答用户问题。"
+        return (
+            "【知识库无结果】知识库中未找到与查询相关的文档。\n\n"
+            "重要提示：这是最终检索结果，请不要再次调用 search_knowledge 工具或尝试换用不同关键词。"
+            "你必须基于自己的通用健康知识直接回答用户问题，并在回答中说明「未在您的个人健康档案中找到相关信息」。"
+        )
 
     # Separate high vs low confidence results
     high_conf = [c for c in result.citations if c["score"] >= HIGH_CONFIDENCE_THRESHOLD]
     low_conf = [c for c in result.citations if c["score"] < HIGH_CONFIDENCE_THRESHOLD]
 
     if not high_conf and low_conf:
-        parts = ["【知识库低相关】以下内容与问题关联较弱，仅供参考："]
-        for i, c in enumerate(low_conf, 1):
-            parts.append(f"[{i}] 来源: {c['document']} (相关度: {c['score']:.2f})\n{c['snippet']}")
-        parts.append("\n如果以上内容无法回答问题，请基于通用知识回答。")
+        parts = [
+            "【知识库低相关】以下内容与问题关联较弱，仅供参考：",
+            *[f"[{i}] 来源: {c['document']} (相关度: {c['score']:.2f})\n{c['snippet']}" for i, c in enumerate(low_conf, 1)],
+            "",
+            "重要提示：以上已是知识库全部可用内容，请不要再次调用 search_knowledge 工具。"
+            "如果以上内容无法充分回答问题，你必须基于自己的通用健康知识直接回答，"
+            "同时说明「您的个人健康档案中未找到直接相关的信息」。",
+        ]
         return "\n\n".join(parts)
 
     parts = ["【知识库命中】找到以下相关内容："]
