@@ -6,13 +6,13 @@ import logging
 import time
 from dataclasses import dataclass
 
-from langchain_openai import ChatOpenAI
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.database import async_session
 from app.models.conversation import Conversation, Message
+from app.services.llm_provider import create_light_openrouter_llm
 
 logger = logging.getLogger(__name__)
 
@@ -26,20 +26,14 @@ class ConversationContext:
     message_count: int = 0
 
 
-_summary_llm: ChatOpenAI | None = None
+_summary_llm = None
 
 
-def _get_summary_llm() -> ChatOpenAI:
+def _get_summary_llm():
     """Get the lightweight model used only for persisted rolling summaries."""
     global _summary_llm
     if _summary_llm is None:
-        _summary_llm = ChatOpenAI(
-            api_key=settings.deepseek_api_key,
-            base_url=settings.deepseek_base_url,
-            model="deepseek-v4-flash",
-            max_tokens=600,
-            temperature=0.2,
-        )
+        _summary_llm = create_light_openrouter_llm(max_tokens=600, temperature=0.2)
     return _summary_llm
 
 

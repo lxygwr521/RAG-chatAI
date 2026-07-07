@@ -10,7 +10,7 @@ class Conversation(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     title: Mapped[str] = mapped_column(String(200), default="新对话")
-    model: Mapped[str] = mapped_column(String(50), default="deepseek")
+    model: Mapped[str] = mapped_column(String(50), default="openrouter")
     created_at: Mapped[int] = mapped_column(Integer, default=lambda: int(time.time() * 1000))
     updated_at: Mapped[int] = mapped_column(Integer, default=lambda: int(time.time() * 1000))
     summary_text: Mapped[str | None] = mapped_column(Text, nullable=True)

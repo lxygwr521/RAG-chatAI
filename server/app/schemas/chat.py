@@ -10,7 +10,7 @@ class FileRef(BaseModel):
 
 class ChatRequest(BaseModel):
     conversation_id: str | None = None
-    model: str = "deepseek"
+    model: str = "openrouter"
     messages: list[dict]
     files: list[FileRef] | None = None
 
@@ -19,7 +19,7 @@ class ChatRequest(BaseModel):
 
 class ConversationCreate(BaseModel):
     title: str = "新对话"
-    model: str = "deepseek"
+    model: str = "openrouter"
 
 
 class ConversationOut(BaseModel):

@@ -33,7 +33,7 @@ class SSEEvent:
 # Factory functions for common event types
 
 def delta_event(content: str | None = None, reasoning_content: str | None = None) -> SSEEvent:
-    """LLM text delta — same format as DeepSeek's {choices: [{delta: ...}]}."""
+    """LLM text delta: OpenAI-compatible {choices: [{delta: ...}]}."""
     delta: dict = {}
     if content is not None:
         delta["content"] = content
@@ -83,6 +83,5 @@ def done_event(summary_text: str | None = None, summarized_count: int = 0) -> SS
 def error_event(message: str) -> SSEEvent:
     """Stream error."""
     return SSEEvent(event="error", data={"error": message})
-
 
 

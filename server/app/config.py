@@ -4,11 +4,16 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings, loaded from .env file and environment variables."""
 
-    # LLM Provider (DeepSeek)
-    deepseek_api_key: str
-    deepseek_base_url: str = "https://api.deepseek.com"
-    deepseek_model: str = "deepseek-v4-flash"
-    deepseek_max_tokens: int = 8192
+    # LLM Provider (OpenRouter, OpenAI-compatible chat completions)
+    openrouter_api_key: str = ""
+    open_router_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model: str = "deepseek/deepseek-chat"
+    openrouter_light_model: str = "deepseek/deepseek-chat"
+    openrouter_judge_model: str = "z-ai/glm-5.2"
+    openrouter_max_tokens: int = 8192
+    openrouter_referer: str = ""
+    openrouter_app_name: str = "chatAI"
 
     # Embedding Provider (智谱 ZhipuAI, OpenAI-compatible)
     zhipuai_api_key: str = ""
@@ -57,7 +62,7 @@ class Settings(BaseSettings):
     mock_chunk_size: int = 100
     mock_interval_ms: int = 50
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 settings = Settings()

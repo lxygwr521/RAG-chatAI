@@ -14,7 +14,6 @@ from typing import Optional
 from dataclasses import dataclass
 
 import chromadb
-from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -24,6 +23,7 @@ from app.rag.splitter import split_documents
 from app.rag.embedder import get_embedder, ChromaEmbeddingFunction
 from app.rag.retriever import retrieve_context, RetrievedChunk
 from app.rag.prompt import build_citations
+from app.services.llm_provider import create_light_openrouter_llm
 
 logger = logging.getLogger(__name__)
 
@@ -45,19 +45,13 @@ HYDE_PROMPT = """你是一个个人健康档案撰写助手。根据用户的健
 假想文档片段："""
 
 # Lazy-initialized HyDE LLM (lightweight model for fast generation)
-_hyde_llm: Optional[ChatOpenAI] = None
+_hyde_llm = None
 
-def _get_hyde_llm() -> ChatOpenAI:
+def _get_hyde_llm():
     """Get or create the HyDE generation LLM (lazy init, singleton)."""
     global _hyde_llm
     if _hyde_llm is None:
-        _hyde_llm = ChatOpenAI(
-            api_key=settings.deepseek_api_key,
-            base_url=settings.deepseek_base_url,
-            model="deepseek-v4-flash",
-            max_tokens=300,
-            temperature=0.3,
-        )
+        _hyde_llm = create_light_openrouter_llm(max_tokens=300, temperature=0.3)
     return _hyde_llm
 
 

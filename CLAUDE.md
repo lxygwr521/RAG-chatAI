@@ -4,7 +4,7 @@
 
 ## 项目概览
 
-AI 健康知识库对话平台。前端使用 Vue 3 + Vite + TypeScript，后端使用 Python + FastAPI + LangChain/LangGraph。平台支持 DeepSeek 流式对话、会话管理、聊天附件文本拼接、Markdown 渲染、知识库文档上传，以及基于 ChromaDB + ZhipuAI/OpenAI/ONNX embeddings 的 RAG 检索。
+AI 健康知识库对话平台。前端使用 Vue 3 + Vite + TypeScript，后端使用 Python + FastAPI + LangChain/LangGraph。平台支持 OpenRouter 统一模型网关流式对话、会话管理、聊天附件文本拼接、Markdown 渲染、知识库文档上传，以及基于 ChromaDB + ZhipuAI/OpenAI/ONNX embeddings 的 RAG 检索。
 
 当前 Agent 基于 `langchain.agents.create_agent`，注册 `search_knowledge` 作为 LangChain `@tool`。上下文连续性不依赖 LangChain `SummarizationMiddleware`，而是由后端持久化滚动摘要、跨会话情景记忆、用户健康画像共同提供。
 
@@ -53,7 +53,7 @@ curl http://localhost:3001/api/eval/retrieval/report/latest
   └── fetch('/api/chat') + '/api/conversations' + '/api/knowledge' + '/api/memory'
         │ SSE typed events (delta / tool_call / tool_result / done / error；citations 事件有兼容处理)
 FastAPI (Python, :3001)
-  ├── POST /api/chat              → SQLite 上下文 → AgentService → ChatOpenAI(DeepSeek) → SSE
+  ├── POST /api/chat              → SQLite 上下文 → AgentService → ChatOpenAI(OpenRouter) → SSE
   ├── /api/conversations/*        → SQLite 会话/消息 CRUD
   ├── /api/knowledge/documents    → 文档上传/删除/列表 + ChromaDB 向量库
   ├── /api/memory/*               → 用户画像与可追溯长期事实管理
@@ -64,12 +64,12 @@ FastAPI (Python, :3001)
 
 ```text
 server/
-  .env                          # DEEPSEEK_API_KEY, ZHIPUAI_API_KEY 等
+  .env                          # OPENROUTER_API_KEY, ZHIPUAI_API_KEY 等
   .env.example
   pyproject.toml
   app/
     main.py                     # FastAPI app, CORS, 请求日志, 全局异常处理, lifespan 初始化
-    config.py                   # pydantic-settings: DeepSeek, embeddings, DB, Chroma, context
+    config.py                   # pydantic-settings: OpenRouter, embeddings, DB, Chroma, context
     api/
       deps.py                   # get_db 依赖注入
       chat.py                   # POST /api/chat: 持久化 → 上下文 → Agent → SSE → 后处理
@@ -147,7 +147,7 @@ POST /api/chat
 - **摘要字段**: `conversations.summary_text`, `summarized_through_message_id`, `summarized_count`, `summary_updated_at`。
 - **保留窗口**: `settings.recent_window_size = 20`，摘要时保留最近 20 条未摘要消息原文。
 - **触发条件**: 未摘要消息超过 `recent_window_size * 2`，或首次摘要时总消息数超过 80，或本地估算 token 超过 `settings.max_context_tokens = 80000`。
-- **摘要模型**: `deepseek-v4-flash`，输出 300 字以内中文摘要。
+- **摘要模型**: `settings.openrouter_light_model`，输出 300 字以内中文摘要。
 - **执行时机**: 每轮助手消息保存后通过 `asyncio.create_task(update_rolling_summary(conv_id))` 异步运行。
 
 ### 长期记忆
@@ -174,7 +174,7 @@ async def search_knowledge(query: str) -> str:
 - 工具只接收模型传入的 `query` 字符串；检索时没有把完整会话 history 传入 `augment_chat()`。
 - Agent 外层仍持有完整会话上下文、滚动摘要、跨会话记忆和用户画像。工具调用不会主动清空 Agent 的外层上下文。
 - 如果问题包含“它/这个/上一条”等指代，是否能检索准确取决于模型是否把上下文改写进 `query`。必要时应优化工具说明或新增上下文感知 query rewrite，而不是在前端恢复 RAG 开关。
-- `augment_chat()` 使用 HyDE：先让 `deepseek-v4-flash` 生成假想健康文档片段，再对该片段做 embedding 检索。
+- `augment_chat()` 使用 HyDE：先让 `settings.openrouter_light_model` 生成假想健康文档片段，再对该片段做 embedding 检索。
 - ChromaDB 检索使用 `retrieve_context(..., top_k=5, score_threshold=1.5)`；`search_knowledge.py` 内部还用 `HIGH_CONFIDENCE_THRESHOLD = 0.6` 区分返回文本。
 
 ### 知识库文档
@@ -255,7 +255,7 @@ ZhipuAI embedding-2（配置 ZHIPUAI_API_KEY）→ OpenAI text-embedding-3-small
 ## 运行时环境
 
 - **前端**: `frontend/.env` 通常无需 API Key，后端统一持有模型与 embedding key。
-- **后端**: `server/.env` 至少需要 `DEEPSEEK_API_KEY`；知识库优先使用 `ZHIPUAI_API_KEY`，没有时按 OpenAI/ONNX fallback。
+- **后端**: `server/.env` 至少需要 `OPENROUTER_API_KEY`；知识库优先使用 `ZHIPUAI_API_KEY`，没有时按 OpenAI/ONNX fallback。
 - **Node**: `^20.19.0 || >=22.12.0`
 - **Python**: `>=3.11`
 

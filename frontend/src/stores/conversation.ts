@@ -24,7 +24,7 @@ export interface Conversation {
 export const useConversationStore = defineStore('conversation', () => {
   const conversations = ref<Conversation[]>([])
   const currentConversationId = ref<string | null>(null)
-  const selectedModel = ref('deepseek')
+  const selectedModel = ref('openrouter')
   const loaded = ref(false)
 
   const currentConversation = computed(() =>

@@ -16,11 +16,11 @@ interface ChatRequest {
 }
 
 /**
- * Call the backend chat API, which proxies to DeepSeek (or serves mock).
+ * Call the backend chat API, which routes chat LLM traffic through OpenRouter.
  * Returns a reader that yields individual SSE data strings,
- * exactly like the old direct-DeepSeek flow.
+ * exactly like the old direct-provider flow.
  *
- * The SSE data format is DeepSeek-compatible:
+ * The SSE data format is OpenAI-compatible:
  *   {"choices":[{"delta":{"content":"...","reasoning_content":"..."}}]}
  * The first event may be {"conversation_id":"..."} for new conversations.
  */

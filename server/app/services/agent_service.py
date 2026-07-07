@@ -1,7 +1,7 @@
 """Agent service --- LangChain Agent with Tool calling and guarded memory context.
 
 Uses:
-  - ChatOpenAI (base_url -> DeepSeek) for LLM
+  - ChatOpenAI (base_url -> OpenRouter) for LLM
   - langchain.agents.create_agent for Agent loop
   - Guarded system context for persisted summary/profile/episodic memories
   - SSE typed events for streaming + tool call transparency
@@ -11,7 +11,6 @@ import asyncio
 from typing import AsyncGenerator
 
 from langchain.agents import create_agent
-from langchain_openai import ChatOpenAI
 
 from app.config import settings
 from app.core.sse import (
@@ -23,6 +22,7 @@ from app.core.sse import (
     error_event,
 )
 from app.tools.search_knowledge import search_knowledge
+from app.services.llm_provider import create_openrouter_llm
 
 # Language prompt for Chinese-speaking assistant with tool use
 SYSTEM_PROMPT = """
@@ -84,13 +84,7 @@ class AgentService:
 
     def __init__(self):
         self._tools = [search_knowledge]
-        self._llm = ChatOpenAI(
-            api_key=settings.deepseek_api_key,
-            base_url=settings.deepseek_base_url,
-            model=settings.deepseek_model,
-            max_tokens=settings.deepseek_max_tokens,
-            temperature=0.7,
-        )
+        self._llm = create_openrouter_llm(temperature=0.7)
 
         self._agent = create_agent(
             model=self._llm,
@@ -105,7 +99,7 @@ class AgentService:
     async def run(
         self,
         messages: list[dict],
-        model: str = "deepseek",
+        model: str = "openrouter",
         abort_event: asyncio.Event | None = None,
         summary_context: str | None = None,
         memory_context: str | None = None,
@@ -118,6 +112,8 @@ class AgentService:
         ``messages`` should include the full conversation context:
           - user/assistant history
           - the current user message (last)
+        ``model`` is kept for request metadata compatibility; provider/model
+        routing is configured centrally through ``OPENROUTER_*`` settings.
         ``summary_context``: persisted summary from this conversation's history.
         ``memory_context``: relevant memories from other conversations.
         ``profile_context``: user traits from long-term profile.

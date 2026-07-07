@@ -1,6 +1,6 @@
 # ChatAI - AI 健康知识库对话平台
 
-基于 **Vue 3 + Vite + TypeScript + FastAPI + LangChain/LangGraph + ChromaDB** 构建的 AI 健康知识库对话平台。项目支持 DeepSeek 流式对话、会话持久化、聊天附件文本拼接、Markdown 渲染、知识库文档上传，以及基于 ChromaDB + ZhipuAI/OpenAI/ONNX embeddings 的 RAG 检索。
+基于 **Vue 3 + Vite + TypeScript + FastAPI + LangChain/LangGraph + ChromaDB** 构建的 AI 健康知识库对话平台。项目支持 OpenRouter 统一模型网关流式对话、会话持久化、聊天附件文本拼接、Markdown 渲染、知识库文档上传，以及基于 ChromaDB + ZhipuAI/OpenAI/ONNX embeddings 的 RAG 检索。
 
 ![界面展示](image/front.png)
 
@@ -54,7 +54,7 @@ chatAI/
 - **Node.js**: `^20.19.0 || >=22.12.0`
 - **pnpm**: 前端包管理器
 - **Python**: `>=3.11`
-- **后端 API Key**: 至少需要 `DEEPSEEK_API_KEY`
+- **后端 API Key**: 至少需要 `OPENROUTER_API_KEY`
 
 ## 快速开始
 
@@ -68,9 +68,11 @@ cp .env.example .env
 编辑 `server/.env`，至少填写：
 
 ```env
-DEEPSEEK_API_KEY=sk-your-key-here
-DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-v4-flash
+OPENROUTER_API_KEY=your-openrouter-api-key
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=deepseek/deepseek-chat
+OPENROUTER_LIGHT_MODEL=deepseek/deepseek-chat
+OPENROUTER_JUDGE_MODEL=z-ai/glm-5.2
 
 # 知识库 embedding 优先使用 ZhipuAI；未配置时按 OpenAI / ONNX fallback
 ZHIPUAI_API_KEY=your-zhipu-api-key
@@ -208,7 +210,7 @@ Agent -> search_knowledge(query)
 ```json
 {
   "conversation_id": "uuid-or-null",
-  "model": "deepseek",
+  "model": "openrouter",
   "messages": [
     {
       "role": "user",

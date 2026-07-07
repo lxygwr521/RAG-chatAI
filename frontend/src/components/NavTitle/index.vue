@@ -60,7 +60,7 @@ interface ModelOption {
 
 const modelOptions: ModelOption[] = [
   { value: 'mock', label: '模拟数据模型' },
-  { value: 'deepseek', label: 'DeepSeek' },
+  { value: 'openrouter', label: 'OpenRouter' },
 
 ]
 

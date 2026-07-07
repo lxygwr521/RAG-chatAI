@@ -14,7 +14,6 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Optional
 
-from langchain_openai import ChatOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +21,7 @@ from app.config import settings
 from app.core.database import async_session
 from app.models.memory import EpisodicMemoryRecord, UserMemoryFact, UserProfile
 from app.rag.embedder import get_embedder
+from app.services.llm_provider import create_light_openrouter_llm
 
 logger = logging.getLogger(__name__)
 
@@ -77,19 +77,13 @@ def _get_collection():
 # Flash LLM for memory extraction
 # ---------------------------------------------------------------------------
 
-_memory_llm: Optional[ChatOpenAI] = None
+_memory_llm = None
 
 
-def _get_memory_llm() -> ChatOpenAI:
+def _get_memory_llm():
     global _memory_llm
     if _memory_llm is None:
-        _memory_llm = ChatOpenAI(
-            api_key=settings.deepseek_api_key,
-            base_url=settings.deepseek_base_url,
-            model="deepseek-v4-flash",
-            max_tokens=500,
-            temperature=0.3,
-        )
+        _memory_llm = create_light_openrouter_llm(max_tokens=500, temperature=0.3)
     return _memory_llm
 
 
