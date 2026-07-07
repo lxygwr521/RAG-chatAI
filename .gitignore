@@ -48,7 +48,9 @@ server/evaluation/reports/
 plan/
 resume/
 framework/
-
+problem/
+.claude/
+.agents/
 # SQLite
 *.db-shm
 *.db-wal

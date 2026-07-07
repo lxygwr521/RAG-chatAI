@@ -29,16 +29,17 @@ uvicorn app.main:app --port 3001 --reload             # 开发模式（热重载
 uvicorn app.main:app --port 3001                      # 生产模式
 ```
 
-### RAGAS 评估（可选）
-
-`ragas`、`datasets`、`pandas` 是评估功能的可选依赖，当前未写入 `server/pyproject.toml`。需要运行评估时先安装：
+### 检索评估
 
 ```bash
-cd server
-pip install ragas datasets pandas
-curl -X POST http://localhost:3001/api/eval/prepare
-curl -X POST http://localhost:3001/api/eval/run
-curl http://localhost:3001/api/eval/report/latest
+# 查看测试用例
+curl http://localhost:3001/api/eval/retrieval/test-cases
+# 运行检索评估（对比 vector_only / hybrid_rrf / hybrid_rerank）
+curl -X POST http://localhost:3001/api/eval/retrieval/run \
+  -H "Content-Type: application/json" \
+  -d '{"top_k": 5, "use_hyde": true}'
+# 查看最新报告
+curl http://localhost:3001/api/eval/retrieval/report/latest
 ```
 
 ## 架构
@@ -56,7 +57,7 @@ FastAPI (Python, :3001)
   ├── /api/conversations/*        → SQLite 会话/消息 CRUD
   ├── /api/knowledge/documents    → 文档上传/删除/列表 + ChromaDB 向量库
   ├── /api/memory/*               → 用户画像与可追溯长期事实管理
-  └── /api/eval/*                 → RAGAS 评估端点（可选依赖）
+  └── /api/eval/*                 → 检索评估端点（hit@k / MRR / 延迟）
 ```
 
 ### 后端项目结构
@@ -102,14 +103,13 @@ server/
     chat.db                     # SQLite
     chroma/                     # ChromaDB 向量持久化（知识库 + 情景记忆 collection）
     uploads/                    # 上传文档原始文件
-  evaluation/                   # RAGAS 评估框架
-    api.py                      # FastAPI 端点 /api/eval/*
+  evaluation/                   # 检索评估框架
+    api.py                      # FastAPI 端点 /api/eval/retrieval/*
     config.py                   # EvalConfig 数据类
-    runner.py                   # EvaluationRunner: prepare → evaluate → report
-    report.py                   # Markdown + JSON 报告生成
-    dataset/test_cases.py       # 11 条手工测试用例
-    metrics/__init__.py         # RAGAS 0.4.x 指标懒加载封装
-    reports/                    # gitignored，eval_YYYYMMDD_HHMMSS.json/.md + baseline.json
+    retrieval_runner.py         # RetrievalEvalRunner: hit@k + MRR + 延迟
+    dataset/
+      retrieval_cases.py        # 22 条手工标注检索测试用例
+    reports/                    # gitignored，retrieval_eval_*.json + *.md
 ```
 
 ## Chat 数据流
@@ -226,19 +226,17 @@ ZhipuAI embedding-2（配置 ZHIPUAI_API_KEY）→ OpenAI text-embedding-3-small
 | ChromaDB | 知识库向量 + 原文副本 + metadata；情景记忆向量 |
 | `server/data/uploads/` | 上传知识库文档原始文件 |
 | Pinia | 前端工作缓存，启动/切换会话时从后端加载 |
-| `server/evaluation/reports/` | RAGAS 评估报告 `.json` + `.md`，gitignored |
+| `server/evaluation/reports/` | 检索评估报告 `.json` + `.md`，gitignored |
 
-## RAGAS 评估体系
+## 检索评估体系
 
-评估代码位于 `server/evaluation/`，API 在 `main.py` 中通过 `app.include_router(eval_router)` 挂载到 `/api/eval/*`。
+评估代码位于 `server/evaluation/`，API 在 `main.py` 中通过 `app.include_router(eval_router)` 挂载到 `/api/eval/retrieval/*`。
 
-- **指标**: RAGAS 0.4.x 懒加载 `Faithfulness`, `AnswerRelevancy`, `ContextPrecision`, `ContextRecall`。
-- **阈值**: Faithfulness ≥ 0.80, AnswerRelevancy ≥ 0.70, ContextPrecision ≥ 0.70, ContextRecall ≥ 0.70；配置中还保留 `context_relevancy_min = 0.60`。
-- **Judge 模型**: `deepseek-chat`，temperature=0。`EvaluationRunner` 对 DeepSeek 不支持 `n>1` 做了 wrapper 兼容。
-- **测试用例**: `server/evaluation/dataset/test_cases.py` 当前 11 条，覆盖 factual / reasoning / edge_case / multi_doc / safety。
-- **执行流程**: 先 `/api/eval/prepare` 调 RAG + Agent 填充 answer/contexts，再 `/api/eval/run` 计算指标。
-- **报告**: `server/evaluation/reports/eval_YYYYMMDD_HHMMSS.json` + `.md`。
-- **基线**: `baseline.json` 用于 `/api/eval/regression` 对比，退化阈值默认 5%。
+- **指标**: Hit@1, Hit@3, Hit@5, MRR, avg_elapsed_ms。
+- **对比模式**: `vector_only`（纯向量）、`hybrid_rrf`（向量 + BM25 → RRF 融合）、`hybrid_rerank`（混合召回 → MiniLM 重排序）。
+- **测试用例**: `server/evaluation/dataset/retrieval_cases.py` 22 条手工标注用例，覆盖 6 份知识库文档、10 个类别。
+- **评估方法**: 不经过 Agent，直接调用 `retrieve_context()`，用 `expected_terms` 或 `expected_documents` 判断 chunk 命中。
+- **报告**: `server/evaluation/reports/retrieval_eval_YYYYMMDD_HHMMSS.json` + `.md`。
 
 ## 前端约束
 
@@ -253,8 +251,6 @@ ZhipuAI embedding-2（配置 ZHIPUAI_API_KEY）→ OpenAI text-embedding-3-small
 **前端**: Vue 3, Pinia, Naive UI, Tailwind CSS 4, SCSS, markdown-it, highlight.js, KaTeX, Mermaid
 
 **后端**: FastAPI, uvicorn, pydantic-settings, SQLAlchemy async + aiOSQLite, sse-starlette, chromadb, langchain, langchain-openai, langchain-community, langchain-text-splitters, openai, pypdf, python-multipart
-
-**可选评估依赖**: ragas, datasets, pandas
 
 ## 运行时环境
 

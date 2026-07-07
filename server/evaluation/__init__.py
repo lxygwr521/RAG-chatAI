@@ -1,9 +1,8 @@
-"""RAGAS evaluation framework for the RAG knowledge base.
+"""Retrieval evaluation framework for the RAG knowledge base.
 
 Provides:
-  - Core RAG metrics (faithfulness, relevancy, precision, recall)
-  - Test dataset management (manual + auto-generated)
-  - Batch evaluation runner with regression detection
-  - Report generation (Markdown / JSON)
+  - Retrieval-only evaluation (hit@k, MRR, latency)
+  - Hand-annotated test cases with expected_terms
+  - Multi-mode comparison (vector_only, hybrid_rrf, hybrid_rerank)
   - FastAPI evaluation endpoints
 """
