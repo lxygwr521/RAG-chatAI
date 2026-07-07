@@ -167,6 +167,16 @@ curl http://localhost:3001/api/eval/retrieval/test-cases
 curl -X POST http://localhost:3001/api/eval/retrieval/run
 ```
 
+Agent 端到端 LLM-as-Judge 评估：
+
+```bash
+curl http://localhost:3001/api/eval/agent/test-cases
+curl -X POST http://localhost:3001/api/eval/agent/run \
+  -H "Content-Type: application/json" \
+  -d '{"judge_runs": 1, "persist": true}'
+curl http://localhost:3001/api/eval/agent/report/latest
+```
+
 ## 核心数据流
 
 ### 聊天请求
