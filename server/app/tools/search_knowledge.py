@@ -10,10 +10,9 @@ from app.services.rag_service import augment_chat
 # ChromaDB cosine distance: 0 = identical, 2 = opposite. < 0.8 = good match.
 HIGH_CONFIDENCE_THRESHOLD = 0.6
 
-
 def _clean_snippet(text: str) -> str:
     """
-    洗和规范化从知识库中检索到的原始文档片段，去除噪声和格式污染
+    清洗和规范化从知识库中检索到的原始文档片段，去除噪声和格式污染
     ，确保传递给LLM的文本更干净、易读。
     """
     # Remove horizontal rule dividers (===...===)

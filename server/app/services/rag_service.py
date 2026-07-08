@@ -22,7 +22,7 @@ from app.rag.loader import load_document
 from app.rag.splitter import split_documents
 from app.rag.embedder import get_embedder, ChromaEmbeddingFunction
 from app.rag.retriever import retrieve_context, RetrievedChunk
-from app.rag.prompt import build_citations
+
 from app.services.llm_provider import create_light_openrouter_llm
 
 logger = logging.getLogger(__name__)
@@ -264,6 +264,20 @@ class RAGResult:
 
     citations: list[dict]
     chunks_used: int
+
+
+def build_citations(retrieved_chunks) -> list[dict]:
+    """Build citation objects for the SSE response."""
+    return [
+        {
+            "chunk_id": chunk.chunk_id,
+            "document": chunk.document,
+            "snippet": chunk.content[:200],
+            # Cosine distance ≈ 0-2, convert to 0-1 similarity
+            "score": round(max(0.0, 1.0 - chunk.score / 2.0), 4),
+        }
+        for chunk in retrieved_chunks
+    ]
 
 
 async def augment_chat(

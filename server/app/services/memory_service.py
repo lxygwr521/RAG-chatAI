@@ -91,18 +91,32 @@ def _get_memory_llm():
 # Extraction
 # ---------------------------------------------------------------------------
 
-EXTRACTION_PROMPT = """分析以下对话，提取关键信息，以 JSON 格式返回（只输出 JSON，不要任何其他文字）：
+EXTRACTION_PROMPT = """分析以下对话，提取有跨会话检索价值的关键事件，以 JSON 格式返回（只输出 JSON，不要任何其他文字）：
+
+你的职责是捕捉**事件**——用户经历了什么、做了什么决定、给了什么反馈、遇到了什么困扰——而不是记录用户的长期属性。
+长期属性（疾病、过敏、用药、偏好、目标）由用户画像系统专门管理，你不需要重复保存。
 
 {{
-  "summary": "一段150字以内的对话摘要，重点包括用户健康信息、给出的建议、用户偏好",
+  "summary": "一段150字以内的事件摘要。描述本轮对话中发生了什么：用户问了什么核心问题、做了哪些决定或行动、对建议有何反馈、达成了什么阶段性结论。以事件为中心，不以用户属性为中心。",
   "facts": [
-    {{"fact": "用户提到有高血压，收缩压145mmHg", "category": "condition", "importance": 8}},
-    {{"fact": "建议每天快走30分钟", "category": "advice", "importance": 6}}
+    {{"fact": "用户对上一轮的低盐饮食建议反馈执行困难，希望换成更实际的方案", "category": "user_feedback", "importance": 8}},
+    {{"fact": "用户计划下周开始每天快走30分钟", "category": "action_or_plan", "importance": 7}}
   ]
 }}
 
-category 可选值：condition（健康状况）、medication（用药）、diet（饮食）、exercise（运动）、preference（偏好）、advice（建议）、other
-importance 1-10，10 为最重要。只提取明确提到的信息，不要推测。
+category 可选值：
+- action_or_plan：用户采取的行动、做的决定、制定的计划
+- user_feedback：用户对之前建议的反馈（有效/无效/难以执行/需要调整）
+- advice_given：本轮给用户的关键建议或方案
+- outcome_or_result：阶段性结果、指标变化、达成的结论
+- concern_or_question：用户的核心困扰、关键疑问、反复提到的问题
+
+importance 1-10，10 为最重要。
+
+规则：
+- 只提取有跨会话检索价值的事件信息，一次性的寒暄或常规对话不提取。
+- 如果当前轮次没有值得跨会话检索的新事件，返回 {{"summary": "", "facts": []}}。
+- 只提取对话中明确提到的信息，不要推测。
 
 对话内容：
 {conversation_text}
@@ -380,20 +394,23 @@ def format_memory_context(memories: list[EpisodicMemory]) -> str:
 
 USER_PROFILE_ID = 1  # Single-user app
 
-PROFILE_EXTRACTION_PROMPT = """分析以下对话，提取用户明确提到的长期健康画像事实，以 JSON 格式返回（只输出 JSON）：
+PROFILE_EXTRACTION_PROMPT = """分析以下对话，提取用户明确表达的长期健康画像事实，以 JSON 格式返回（只输出 JSON）：
 
-{{
+你是长期用户画像的唯一权威来源。你提取的事实会持久保存并跨会话复用，因此必须谨慎——只记录用户明确表达、长期稳定的信息。
+短期计划、一次性反馈、临时的困惑或想法不应进入画像。会话摘要和情景记忆会分别管理会话连续性和历史事件，你不需要覆盖它们。
+
+{
   "facts": [
-    {{
+    {
       "category": "condition",
       "key": "高血压",
-      "value": {{"name": "高血压", "details": "用户明确提到有高血压"}},
+      "value": {"name": "高血压", "details": "用户明确提到有高血压"},
       "status": "active",
       "confidence": 0.9,
       "evidence": "我有高血压"
-    }}
+    }
   ]
-}}
+}
 
 category 可选值：
 - basic：年龄、性别、身高、体重，key 使用 age/gender/height/weight
@@ -411,10 +428,12 @@ status 可选值：
 - pending：信息重要但表达不够确定
 
 规则：
-- 只提取用户明确提到的信息，不要推测。
-- 不要把助手建议当作用户事实。
-- 如果用户纠正或否定了旧信息，返回对应 key 且 status 为 corrected 或 inactive。
-- 如果没有新的长期画像事实，返回 {{"facts": []}}。
+- 只提取**用户**明确提到的长期稳定信息，不要推测。
+- 不要把助手说的话写为用户事实。
+- 不要把一次性的临时计划、当前困惑或短期反馈提取为长期事实。
+- 对用药、诊断、过敏、体检指标等高风险事实，务必填写 evidence 字段引用用户原话。
+- 如果用户纠正或否定了旧信息，返回对应 key 且 status 为 corrected 或 inactive，并在 evidence 中记录纠正的原话。
+- 如果没有新的长期画像事实，返回 {"facts": []}。
 
 对话内容：
 {conversation_text}
