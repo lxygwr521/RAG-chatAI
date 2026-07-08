@@ -15,6 +15,9 @@ class _NoiseFilter(logging.Filter):
 
 logging.getLogger().addFilter(_NoiseFilter())
 
+# Suppress ChromaDB posthog telemetry noise (known bug: capture() signature mismatch)
+logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL)
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

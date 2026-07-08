@@ -174,6 +174,8 @@ class AgentService:
 
             yield done_event()
 
+        except asyncio.CancelledError:
+            return  # Client disconnected, suppress silently
         except Exception as e:
             yield error_event(str(e))
 

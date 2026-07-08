@@ -180,7 +180,7 @@ async def _chat_event_generator(
                 full_thinking if full_thinking else None,
             )
             db.add(assistant_msg)
-            await db.commit()  # 显式提交部分内容
+            await asyncio.shield(db.commit())  # 显式提交部分内容，屏蔽取消信号
             asyncio.create_task(update_rolling_summary(conv_id))
 
 
@@ -197,16 +197,19 @@ async def chat(
     """
     abort_event = asyncio.Event()
 
-    async def event_generator():# 序列化为 HTTP 格式
-        async for sse_event in _chat_event_generator(request, db, abort_event):
-            if await http_request.is_disconnected():
-                abort_event.set()
-                break
-            if isinstance(sse_event, SSEEvent):
-                yield sse_event.to_dict()
-            elif isinstance(sse_event, dict):
-                yield sse_event
-            else:
-                yield {"data": str(sse_event)}
+    async def event_generator():  # 序列化为 HTTP 格式
+        try:
+            async for sse_event in _chat_event_generator(request, db, abort_event):
+                if await http_request.is_disconnected():
+                    abort_event.set()
+                    break
+                if isinstance(sse_event, SSEEvent):
+                    yield sse_event.to_dict()
+                elif isinstance(sse_event, dict):
+                    yield sse_event
+                else:
+                    yield {"data": str(sse_event)}
+        except asyncio.CancelledError:
+            pass  # Client disconnected during streaming — suppress cancellation noise
 
     return EventSourceResponse(event_generator())
